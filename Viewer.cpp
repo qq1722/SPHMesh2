@@ -386,7 +386,12 @@ void Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action,
     if (key == GLFW_KEY_V) {
         // 在四种模式间循环切换
         viewer->current_view_ = static_cast<ViewMode>((static_cast<int>(viewer->current_view_) + 1) % 4);
+        // --- 关键修复：切换到任何网格视图后，都必须更新缓冲区 ---
+        if (viewer->current_view_ == ViewMode::Triangles || viewer->current_view_ == ViewMode::Quads) {
+            viewer->update_mesh_buffers();
+        }
     }
+  
 
     if (key == GLFW_KEY_S) {
         viewer->save_particle_snapshot();
