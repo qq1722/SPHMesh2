@@ -24,7 +24,7 @@ public:
 
     void set_boundary(Boundary* boundary);
     void set_simulation2d(Simulation2D* sim);
-    void set_mesh_generator2d(MeshGenerator2D* generator);
+   // void set_mesh_generator2d(MeshGenerator2D* generator);
     void run();
     void set_background_grid(BackgroundGrid* grid); // 新增
     void set_cgal_generator(CGALMeshGenerator* generator); // 新增
@@ -75,6 +75,7 @@ private:
 
     Qmorph* qmorph_converter_ = nullptr; // 新增
     // 新增：存储Q-Morph转换结果
+    //std::vector<glm::vec2> smoothed_vertices_; // *** 新增：存储平滑后的顶点 ***
     std::vector<CGALMeshGenerator::Quad> quads_;
     std::vector<CGALMeshGenerator::Triangle> remaining_triangles_;
 
@@ -101,4 +102,7 @@ private:
 
     enum class ViewMode { Particles, SizeField, Triangles, Quads }; // <-- 增加 Quads 模式
     ViewMode current_view_ = ViewMode::Particles;
+
+   
+    
 };

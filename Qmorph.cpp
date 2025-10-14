@@ -103,7 +103,7 @@ void Qmorph::initial_pair_merging(const std::vector<glm::vec2>& vertices, const 
             float quality = calculate_quad_quality(vertices[other_v1], vertices[edge.first], vertices[other_v2], vertices[edge.second]);
 
             // 阈值可以根据需要调整，0.25是一个比较宽松的值
-            if (quality > 0.25f) {
+            if (quality > 0.5f) {
                 result_.quads.push_back({ other_v1, edge.first, other_v2, edge.second });
                 merged_triangles_[idx1] = true;
                 merged_triangles_[idx2] = true;
@@ -137,9 +137,9 @@ float Qmorph::calculate_quad_quality(const glm::vec2& p0, const glm::vec2& p1, c
     }
 
     // 惩罚过于锐利或钝的角
-    if (max_angle_deg > 160.0f || min_angle_deg < 30.0f) {
+   /* if (max_angle_deg > 170.0f || min_angle_deg < 10.0f) {
         return 0.0f;
-    }
+    }*/
 
     // 一个简单的质量度量：越接近90度越好
     float deviation = 0.0f;

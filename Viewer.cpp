@@ -391,7 +391,7 @@ void Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action,
             viewer->update_mesh_buffers();
         }
     }
-  
+
 
     if (key == GLFW_KEY_S) {
         viewer->save_particle_snapshot();
