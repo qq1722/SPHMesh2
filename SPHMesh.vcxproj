@@ -149,6 +149,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Qmorph.cpp" />
     <ClCompile Include="Simulation2D.cpp" />
+    <ClCompile Include="testpoject.cpp" />
     <ClCompile Include="Viewer.cpp" />
   </ItemGroup>
   <ItemGroup>
