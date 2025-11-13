@@ -80,9 +80,16 @@ private:
     std::vector<CGALMeshGenerator::Triangle> remaining_triangles_;
 
 
-    unsigned int VAO_boundary_ = 0, VBO_boundary_ = 0;
+    //unsigned int VAO_boundary_ = 0, VBO_boundary_ = 0;
     unsigned int VAO_particles_ = 0, VBO_particles_ = 0;
-   
+    // [修改] 替换原有的 VAO_boundary_ / VBO_boundary_
+     // 我们定义一个简单的结构体来管理每一条边界线（外环或内洞）
+    struct BoundaryRenderItem {
+        unsigned int vao;
+        unsigned int vbo;
+        int vertex_count;
+    };
+    std::vector<BoundaryRenderItem> boundary_render_items_; // 存储所有边界的渲染信息
 
     Boundary* boundary_ = nullptr;
     Simulation2D* sim2d_ = nullptr;

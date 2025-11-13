@@ -18,8 +18,9 @@ glm::vec2 Simulation2D::transform_to_local(const glm::vec2& vec, const glm::mat2
 Simulation2D::Simulation2D(const Boundary& boundary) : boundary_(boundary) {
     const auto& aabb = boundary.get_aabb();
     float domain_width = aabb.z - aabb.x;
-    float grid_cell_size = domain_width / 80.0f;
+    float grid_cell_size = domain_width / 50.0f;
     grid_ = std::make_unique<BackgroundGrid>(boundary, grid_cell_size);
+
     initialize_particles(boundary);
 }
 
@@ -152,9 +153,28 @@ float Simulation2D::l_inf_norm(const glm::vec2& v) const {
 
 void Simulation2D::handle_boundaries(const Boundary& boundary) {
     for (auto& p : particles_) {
+        // 如果粒子出界（无论是在最外层外面，还是在内洞里面）
         if (!boundary.is_inside(p.position)) {
-            p.position = closest_point_on_polygon(p.position, boundary.get_vertices());
-            p.velocity *= -0.5f;
+
+            glm::vec2 closest_pt;
+            glm::vec2 tangent;
+
+            // 1. 获取最近的边界点和对应的切线方向
+            boundary.get_closest_point_and_tangent(p.position, closest_pt, tangent);
+
+            // 2. 【位置修正】：强行将粒子“吸附”到边界线上
+            p.position = closest_pt;
+
+            // 3. 【速度修正】：实现滑动 (Sliding)
+            // 将速度投影到切线方向。
+            // 数学原理：v_new = (v_old · tangent) * tangent
+            // 这样就去掉了垂直于边界的分量，只保留沿边界跑的分量。
+            float v_dot_t = glm::dot(p.velocity, tangent);
+            p.velocity = v_dot_t * tangent;
+
+            // (可选) 如果你希望粒子在边界上移动时有一些“摩擦力”而慢慢停下
+            // 可以乘一个阻尼系数，比如 0.9f。如果不乘，就是光滑滑动。
+            // p.velocity *= 0.95f; 
         }
     }
 }

@@ -19,9 +19,30 @@ Viewer::~Viewer() {
     delete shader_;
     delete point_shader_;
     delete size_field_shader_;
-    glDeleteVertexArrays(1, &VAO_boundary_); glDeleteBuffers(1, &VBO_boundary_);
+
+    // [修改] 删除旧的清理代码
+    // glDeleteVertexArrays(1, &VAO_boundary_); glDeleteBuffers(1, &VBO_boundary_);
+
+    // [新增] 遍历列表清理所有边界（外环+内洞）的资源
+    for (const auto& item : boundary_render_items_) {
+        // 注意：这里参数 1 表示删除一个，但在循环中会对每个 item 执行
+        // item.vao 和 item.vbo 是 unsigned int，取地址 & 传递给 OpenGL
+        unsigned int vao = item.vao;
+        unsigned int vbo = item.vbo;
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+    }
+
     glDeleteVertexArrays(1, &VAO_particles_); glDeleteBuffers(1, &VBO_particles_);
     glDeleteVertexArrays(1, &VAO_size_field_); glDeleteBuffers(1, &VBO_size_field_);
+
+    // (建议) 既然你也有 VAO_mesh_ 等，最好也在这里清理一下，虽然不是本次错误的重点
+    if (VAO_mesh_ != 0) {
+        glDeleteVertexArrays(1, &VAO_mesh_);
+        glDeleteBuffers(1, &VBO_mesh_);
+        glDeleteBuffers(1, &EBO_mesh_);
+    }
+
     if (window_) { glfwDestroyWindow(window_); }
     if (convergence_log_.is_open()) {
         convergence_log_.close();
@@ -184,14 +205,19 @@ void Viewer::main_loop() {
                 shader_->use();
                 shader_->setMat4("model", model); shader_->setMat4("view", view); shader_->setMat4("projection", projection);
                 shader_->setVec4("color", glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
-                glLineWidth(2.0f);
-                glBindVertexArray(VAO_boundary_);
+                glLineWidth(1.0f);
+                // [修改] 遍历所有边界项进行绘制
+                for (const auto& item : boundary_render_items_) {
+                    glBindVertexArray(item.vao);
+                    glDrawArrays(GL_LINE_LOOP, 0, item.vertex_count);
+                }
+                glBindVertexArray(0);
                 glDrawArrays(GL_LINE_LOOP, 0, boundary_->get_vertices().size());
             }
             if (sim2d_ && point_shader_) {
                 point_shader_->use();
                 point_shader_->setMat4("model", model); point_shader_->setMat4("view", view); point_shader_->setMat4("projection", projection);
-                glPointSize(4.0f);
+                glPointSize(8.0f);
                 glBindVertexArray(VAO_particles_);
                 if (!sim2d_->get_particle_positions().empty()) {
                     glDrawArrays(GL_POINTS, 0, sim2d_->get_particle_positions().size());
@@ -217,7 +243,12 @@ void Viewer::main_loop() {
                 shader_->setMat4("model", model); shader_->setMat4("view", view); shader_->setMat4("projection", projection);
                 shader_->setVec4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
                 glLineWidth(2.5f);
-                glBindVertexArray(VAO_boundary_);
+                // [修改] 遍历所有边界项进行绘制
+                for (const auto& item : boundary_render_items_) {
+                    glBindVertexArray(item.vao);
+                    glDrawArrays(GL_LINE_LOOP, 0, item.vertex_count);
+                }
+                glBindVertexArray(0);
                 glDrawArrays(GL_LINE_LOOP, 0, boundary_->get_vertices().size());
             }
             break;
@@ -464,14 +495,42 @@ void Viewer::set_qmorph_generator(Qmorph* converter) {
 
 void Viewer::setup_boundary_buffers() {
     if (!boundary_) return;
-    glGenVertexArrays(1, &VAO_boundary_);
-    glGenBuffers(1, &VBO_boundary_);
-    glBindVertexArray(VAO_boundary_);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_boundary_);
-    glBufferData(GL_ARRAY_BUFFER, boundary_->get_vertices().size() * sizeof(glm::vec2), boundary_->get_vertices().data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
+
+    // 1. 清理旧数据
+    for (auto& item : boundary_render_items_) {
+        glDeleteVertexArrays(1, &item.vao);
+        glDeleteBuffers(1, &item.vbo);
+    }
+    boundary_render_items_.clear();
+
+    // 2. 准备一个 lambda 函数来处理单个多边形的上传
+    auto add_polygon_to_buffer = [&](const std::vector<glm::vec2>& vertices) {
+        if (vertices.empty()) return;
+        BoundaryRenderItem item;
+        item.vertex_count = (int)vertices.size();
+
+        glGenVertexArrays(1, &item.vao);
+        glGenBuffers(1, &item.vbo);
+
+        glBindVertexArray(item.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, item.vbo);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), vertices.data(), GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        glBindVertexArray(0); // 解绑
+
+        boundary_render_items_.push_back(item);
+        };
+
+    // 3. 上传外环
+    add_polygon_to_buffer(boundary_->get_outer_boundary());
+
+    // 4. 上传所有内洞 [核心修改]
+    for (const auto& hole : boundary_->get_holes()) {
+        add_polygon_to_buffer(hole);
+    }
 }
 
 

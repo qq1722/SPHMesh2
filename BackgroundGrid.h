@@ -17,6 +17,7 @@ public:
     glm::vec2 get_min_coords() const { return min_coords_; }
     const std::vector<float>& get_target_size_field() const { return target_size_field_; }
     // --- 结束 ---
+    float get_min_target_size() const { return h_min_; } // <-- 新增
 
 private:
     void compute_fields(const Boundary& boundary);
@@ -26,4 +27,5 @@ private:
     int width_, height_;
     std::vector<float> target_size_field_;     // 存储 h_t
     std::vector<glm::vec2> target_direction_field_; // 新增：存储 D_t
+    float h_min_; // <-- 新增
 };
