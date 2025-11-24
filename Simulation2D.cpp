@@ -15,17 +15,24 @@ glm::vec2 Simulation2D::transform_to_local(const glm::vec2& vec, const glm::mat2
 
 
 
-Simulation2D::Simulation2D(const Boundary& boundary) : boundary_(boundary) {
+Simulation2D::Simulation2D(const Boundary& boundary, float refinement_level) : boundary_(boundary) {
     const auto& aabb = boundary.get_aabb();
     float domain_width = aabb.z - aabb.x;
-    float grid_cell_size = domain_width / 50.0f;
-    grid_ = std::make_unique<BackgroundGrid>(boundary, grid_cell_size);
+    // 背景网格的分辨率决定了 h_t 场的精度，但不直接决定粒子数量
+    float grid_cell_size = domain_width / 150.0f;
+    // [修改] 1. 先在这里定义 h_min 和 h_max
+     // (你可以保留或修改这里的 curvature 逻辑)
+    h_min_ = grid_cell_size * 0.5f;
+    h_max_ = grid_cell_size * 2.0f;
 
+    // [修改] 2. 将所有参数传递给 BackgroundGrid
+    grid_ = std::make_unique<BackgroundGrid>(boundary, grid_cell_size, refinement_level, h_min_, h_max_);
+
+    // 初始化粒子 (现在调用的是新的四叉树版本)
     initialize_particles(boundary);
 }
 
 
-// --- 核心修改：在力计算中引入局部坐标系 ---
 void Simulation2D::compute_forces() {
     for (auto& p : particles_) { p.force = glm::vec2(0.0f); }
 
@@ -34,11 +41,11 @@ void Simulation2D::compute_forces() {
             glm::vec2 diff_global = particles_[i].position - particles_[j].position;
             float h_avg = (particles_[i].smoothing_h + particles_[j].smoothing_h) * 0.5f;
 
-            // 关键：将全局位移向量转换到粒子i的局部坐标系
+            // 转换到粒子 i 的局部坐标系
             glm::vec2 diff_local_i = transform_to_local(diff_global, particles_[i].rotation);
             float r_inf = l_inf_norm(diff_local_i);
 
-            if (r_inf < 2.0f * h_avg) {
+            if (r_inf < 2.0f * h_avg) { // 2.0 是紧支集半径
                 float q = r_inf / h_avg;
                 if (q > 1e-6) {
                     float rho_t_i = particles_[i].target_density;
@@ -46,13 +53,38 @@ void Simulation2D::compute_forces() {
                     float P_term = (stiffness_ / (rho_t_i * rho_t_i)) + (stiffness_ / (rho_t_j * rho_t_j));
                     float W_grad_mag = wendland_c6_kernel_derivative(q, h_avg);
 
-                    // L∞归一化向量（在局部坐标系下）
-                    glm::vec2 normalized_diff_local = diff_local_i / r_inf;
+                    // ============================================================
+                    // [核心修复] 使用 L-infinity 的真实梯度方向
+                    // ============================================================
+                    glm::vec2 grad_direction(0.0f);
+                    float abs_x = std::abs(diff_local_i.x);
+                    float abs_y = std::abs(diff_local_i.y);
 
-                    // 计算局部坐标系下的力
-                    glm::vec2 force_local = -mass_ * mass_ * P_term * W_grad_mag * normalized_diff_local;
+                    // 容差，处理对角线情况 (此时 x 和 y 差不多大)
+                    // 如果在该容差内，可以分配给两个方向，或者平滑过渡
+                    float epsilon = 1e-5f;
 
-                    // 关键：将局部力转换回全局坐标系
+                    if (abs_x > abs_y + epsilon) {
+                        // X 轴主导：力只在 X 方向
+                        grad_direction = glm::vec2((diff_local_i.x > 0) ? 1.0f : -1.0f, 0.0f);
+                    }
+                    else if (abs_y > abs_x + epsilon) {
+                        // Y 轴主导：力只在 Y 方向
+                        grad_direction = glm::vec2(0.0f, (diff_local_i.y > 0) ? 1.0f : -1.0f);
+                    }
+                    else {
+                        // 对角线情况：两个方向都有 (避免除以零或突变)
+                        // 这种情况下 L_inf 的梯度是多值的，我们取归一化向量作为近似
+                        grad_direction = glm::normalize(diff_local_i);
+                    }
+
+                    // [原来的错误代码] 导致了不稳定性
+                    // glm::vec2 normalized_diff_local = diff_local_i / r_inf; 
+
+                    // 计算局部力 (注意：力沿着 grad_direction)
+                    glm::vec2 force_local = -mass_ * mass_ * P_term * W_grad_mag * grad_direction;
+
+                    // 转换回全局坐标系
                     glm::vec2 force_global = particles_[i].rotation * force_local;
 
                     particles_[i].force += force_global;
@@ -93,30 +125,36 @@ void Simulation2D::update_positions() {
 // ... (compute_forces, update_positions, step, get_particle_positions 保持不变) ...
 
 
+// [修改] 初始化入口
 void Simulation2D::initialize_particles(const Boundary& boundary) {
     particles_.clear();
-    const glm::vec4& aabb = boundary.get_aabb();
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_real_distribution<float> dist(-0.25f, 0.25f);
+    std::cout << "Initializing particles: Hybrid Method (Paper Boundary + Cartesian Interior)..." << std::endl;
 
-    // 使用背景网格的目标尺寸来决定播撒步长
-    for (float y = aabb.y; y <= aabb.w; ) {
-        float current_h_y = grid_->get_target_size({ aabb.x, y });
-        for (float x = aabb.x; x <= aabb.z; ) {
-            float current_h_x = grid_->get_target_size({ x, y });
-            glm::vec2 pos = { x + dist(rng) * current_h_x, y + dist(rng) * current_h_y };
-            if (boundary.is_inside(pos)) {
-                float h_t = grid_->get_target_size(pos);
-                particles_.emplace_back(Particle{ pos, {}, {}, h_t, 1.0f / (h_t * h_t) });
-            }
-            x += current_h_x;
-        }
-        y += current_h_y;
+    // --- A. 生成边界粒子 (论文算法) ---
+    initialize_boundary_particles(boundary.get_outer_boundary());
+    for (const auto& hole : boundary.get_holes()) {
+        initialize_boundary_particles(hole);
     }
+    std::cout << "  Boundary particles generated." << std::endl;
+
+    // --- B. 生成域内粒子 (你的笛卡尔算法) ---
+    // 构建覆盖全域的根正方形
+    const glm::vec4& aabb = boundary.get_aabb();
+    float width = aabb.z - aabb.x;
+    float height = aabb.w - aabb.y;
+    float max_dim = std::max(width, height);
+    glm::vec2 center_aabb = { (aabb.x + aabb.z) * 0.5f, (aabb.y + aabb.w) * 0.5f };
+
+    float root_size = max_dim * 1.2f; // 稍微扩大以覆盖边界
+    glm::vec2 root_min = center_aabb - glm::vec2(root_size * 0.5f);
+    glm::vec2 root_max = center_aabb + glm::vec2(root_size * 0.5f);
+
+    recursive_spawn_particles(root_min, root_max, boundary);
+    std::cout << "  Interior Cartesian particles generated." << std::endl;
 
     num_particles_ = particles_.size();
     positions_for_render_.resize(num_particles_);
-    std::cout << "Generated " << num_particles_ << " adaptive particles." << std::endl;
+    std::cout << "Total particles: " << num_particles_ << std::endl;
 }
 
 float Simulation2D::wendland_c6_kernel(float q, float h) {
@@ -201,3 +239,165 @@ float Simulation2D::get_kinetic_energy() const {
     }
     return total_energy;
 }
+
+
+// ==========================================
+// 2. [你的算法] 域内笛卡尔粒子生成 (四叉树递归)
+// ==========================================
+void Simulation2D::recursive_spawn_particles(glm::vec2 min_pt, glm::vec2 max_pt, const Boundary& boundary) {
+    glm::vec2 center = (min_pt + max_pt) * 0.5f;
+    float current_cell_size = max_pt.x - min_pt.x;
+    float h_target = grid_->get_target_size(center);
+
+    // 防止无限递归的最小尺寸
+    float min_allowed_h = grid_->get_cell_size() * 0.2f;
+
+    // 如果当前格子比目标尺寸大，继续分裂（笛卡尔加密）
+    if (current_cell_size > std::max(h_target, min_allowed_h)) {
+        recursive_spawn_particles(min_pt, center, boundary); // 左下
+        recursive_spawn_particles({ center.x, min_pt.y }, { max_pt.x, center.y }, boundary); // 右下
+        recursive_spawn_particles({ min_pt.x, center.y }, { center.x, max_pt.y }, boundary); // 左上
+        recursive_spawn_particles(center, max_pt, boundary); // 右上
+    }
+    else {
+        // 叶子节点：生成粒子
+        // 【关键检查】只有在边界内部才生成流体粒子
+        // 并且最好离边界有一点点距离，防止和边界粒子重叠太厉害
+        if (boundary.is_inside(center)) {
+            Particle p;
+            p.position = center; // 完美的笛卡尔中心点
+            p.velocity = glm::vec2(0.0f);
+            p.force = glm::vec2(0.0f);
+            p.smoothing_h = h_target;
+            p.target_density = 1.0f / (h_target * h_target);
+            p.is_boundary = false; // 【关键】标记为域内流体粒子
+
+            // 初始旋转矩阵对齐坐标轴
+            p.rotation = glm::mat2(1.0f);
+
+            particles_.push_back(p);
+        }
+    }
+}
+
+// ==========================================
+// 1. [论文算法] 边界粒子生成 (Algorithm 1)
+// ==========================================
+void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& loop) {
+    if (loop.size() < 2) return;
+
+    float Q = 0.0f; // 累加器
+
+    for (size_t i = 0; i < loop.size(); ++i) {
+        glm::vec2 p0 = loop[i];
+        glm::vec2 p1 = loop[(i + 1) % loop.size()];
+
+        // 获取端点目标尺寸
+        float h0 = grid_->get_target_size(p0);
+        float h1 = grid_->get_target_size(p1);
+        float h_bar = 0.5f * (h0 + h1);
+
+        // 计算边长和质量度量
+        float L = glm::distance(p0, p1);
+        float m = L / h_bar;
+        Q += m;
+
+        int n = static_cast<int>(std::floor(Q));
+
+        if (n > 0) {
+            glm::vec2 dir = p1 - p0;
+            for (int k = 0; k < n; ++k) {
+                // 均匀插值
+                float t = (float)k / (float)n;
+                glm::vec2 pos = p0 + t * dir;
+
+                float h_t = grid_->get_target_size(pos);
+                Particle p;
+                p.position = pos;
+                p.smoothing_h = h_t;
+                p.target_density = 1.0f / (h_t * h_t);
+                p.is_boundary = true; // 【关键】标记为边界粒子
+                p.velocity = glm::vec2(0.0f); // 边界粒子不动
+
+                particles_.push_back(p);
+            }
+            Q -= n;
+        }
+    }
+}
+
+// ==========================================
+// [新增] 论文 Algorithm 2: 域内粒子生成
+// ==========================================
+//void Simulation2D::initialize_indomain_particles(const Boundary& boundary) {
+//    int nx = grid_->get_width();
+//    int ny = grid_->get_height();
+//    float cell_size = grid_->get_cell_size();
+//    glm::vec2 min_coord = grid_->get_min_coords();
+//
+//    float Q = 0.0f; // 质量累加器 
+//    float A_cell = cell_size * cell_size; // 单元面积 
+//
+//    std::mt19937 rng(std::random_device{}());
+//    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+//
+//    // 遍历背景网格单元
+//    for (int y = 0; y < ny - 1; ++y) {
+//        for (int x = 0; x < nx - 1; ++x) {
+//            // 计算当前单元的中心
+//            glm::vec2 cell_center = min_coord + glm::vec2((x + 0.5f) * cell_size, (y + 0.5f) * cell_size);
+//
+//            // 1. 检查单元是否在域内 (简化处理：检查中心点) 
+//            // 论文中使用 flag，这里我们利用 Boundary::is_inside
+//            if (!boundary.is_inside(cell_center)) {
+//                continue;
+//            }
+//
+//            // 2. 计算单元四个角点的平均密度 
+//            // get_target_size 返回 h，密度 rho = 1/h^2
+//            float h00 = grid_->get_target_size(min_coord + glm::vec2(x * cell_size, y * cell_size));
+//            float h10 = grid_->get_target_size(min_coord + glm::vec2((x + 1) * cell_size, y * cell_size));
+//            float h01 = grid_->get_target_size(min_coord + glm::vec2(x * cell_size, (y + 1) * cell_size));
+//            float h11 = grid_->get_target_size(min_coord + glm::vec2((x + 1) * cell_size, (y + 1) * cell_size));
+//
+//            float rho00 = 1.0f / (h00 * h00);
+//            float rho10 = 1.0f / (h10 * h10);
+//            float rho01 = 1.0f / (h01 * h01);
+//            float rho11 = 1.0f / (h11 * h11);
+//
+//            float rho_avg = 0.25f * (rho00 + rho10 + rho01 + rho11);
+//
+//            // 3. 计算单元质量 m_cell = rho_avg * A_cell [cite: 181]
+//            float m_cell = rho_avg * A_cell;
+//
+//            // 4. 累加并判断生成数量 
+//            Q += m_cell;
+//            int n = static_cast<int>(std::floor(Q));
+//
+//            if (n > 0) {
+//                // 5. 在单元内均匀采样生成 n 个粒子 
+//                for (int k = 0; k < n; ++k) {
+//                    float u = dist(rng);
+//                    float v = dist(rng);
+//                    glm::vec2 pos = min_coord + glm::vec2((x + u) * cell_size, (y + v) * cell_size);
+//
+//                    // 再次检查具体粒子位置是否在边界内（处理边界附近的网格）
+//                    if (boundary.is_inside(pos)) {
+//                        float h_t = grid_->get_target_size(pos);
+//
+//                        Particle p;
+//                        p.position = pos;
+//                        p.velocity = glm::vec2(0.0f);
+//                        p.force = glm::vec2(0.0f);
+//                        p.smoothing_h = h_t;
+//                        p.target_density = 1.0f / (h_t * h_t);
+//                        p.is_boundary = false; // 域内粒子
+//
+//                        particles_.push_back(p);
+//                    }
+//                }
+//                Q -= n;
+//            }
+//        }
+//    }
+//}

@@ -17,9 +17,11 @@ public:
         float target_density = 0.0f;
         glm::mat2 rotation = glm::mat2(1.0f); // 新增：局部坐标系的旋转矩阵
 		bool is_boundary = false;
+
     };
 
-    Simulation2D(const Boundary& boundary);
+    // [修改] 构造函数接收新参数
+    Simulation2D(const Boundary& boundary, float refinement_level);
     void step();
     const std::vector<glm::vec2>& get_particle_positions() const;
     const std::vector<Particle>& get_particles() const { return particles_; }
@@ -34,6 +36,16 @@ private:
     void compute_forces();
     void update_positions();
     void handle_boundaries(const Boundary& boundary);
+
+    // [新增] 对应论文 Algorithm 1: 边界自适应粒子分布
+    void initialize_boundary_particles(const std::vector<glm::vec2>& loop);
+
+    // [新增] 对应论文 Algorithm 2: 域内自适应粒子分布
+   // void initialize_indomain_particles(const Boundary& boundary);
+
+    // --- [新增] 四叉树递归生成核心函数 ---
+    // min_pt, max_pt: 当前正方形格子的范围
+    void recursive_spawn_particles(glm::vec2 min_pt, glm::vec2 max_pt, const Boundary& boundary);
 
     // 辅助函数
     glm::vec2 transform_to_local(const glm::vec2& vec, const glm::mat2& rot_matrix) const;
@@ -50,7 +62,7 @@ private:
     // SPH 模拟参数
     float time_step_ = 0.005f;
     float mass_ = 1.0f;
-    float stiffness_ = 1.0f;//releace模式1.0f好用
+    float stiffness_ = 0.01f;//releace模式1.0f好用
     float damping_ = 0.998f;
     float h_max_;             // 最大目标尺寸
     float h_min_;             // <-- 新增：补上这个缺失的声明

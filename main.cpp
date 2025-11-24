@@ -148,6 +148,17 @@ int main() {
 
     int selected_chart_index = chart_indices[chart_choice - 1];
 
+    // --- [新增] 步骤 3.5: 询问加密层数 ---
+    float refinement_level = 5.0f; // 默认值
+    std::cout << "\nSet boundary refinement level (e.g., 5.0 = 5 layers): ";
+    std::cin >> refinement_level;
+    if (std::cin.fail() || refinement_level <= 0) {
+        std::cout << "Invalid input, using default (5.0)." << std::endl;
+        refinement_level = 5.0f;
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
     // --- 4. 加载数据 ---
     std::cout << "\nLoading " << selected_model_name << " / Chart " << selected_chart_index << " ..." << std::endl;
 
@@ -160,7 +171,7 @@ int main() {
 
     // --- 5. 创建并运行模拟 ---
     Boundary boundary(active_chart);
-    Simulation2D sim(boundary);
+    Simulation2D sim(boundary, refinement_level);
     CGALMeshGenerator generator;
     Qmorph qmorph_converter;
 
