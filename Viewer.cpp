@@ -439,6 +439,9 @@ void Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action,
                 viewer->remaining_triangles_ = result.remaining_triangles;
                 viewer->current_view_ = ViewMode::Quads;
                 viewer->update_mesh_buffers(); // 在改变状态后更新
+
+                // --> 自动导出
+                viewer->export_current_mesh();
             }
         }
         // 否则，从粒子/大小场生成初始三角网格
@@ -448,6 +451,9 @@ void Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action,
             viewer->remaining_triangles_.clear();
             viewer->current_view_ = ViewMode::Triangles;
             viewer->update_mesh_buffers(); // 在改变状态后更新
+
+            // --> 自动导出
+            viewer->export_current_mesh();
         }
     }
 }
@@ -614,4 +620,78 @@ void Viewer::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
         if (viewer->camera_radius_ > 40.0f) viewer->camera_radius_ = 40.0f;
         viewer->update_camera_vectors();
     }
+}
+
+// [新增] 导出网格的核心函数
+void Viewer::export_current_mesh() {
+    if (!cgal_generator_) return;
+
+    // 1. 确保导出目录存在
+    std::string dir = "exportmesh";
+    if (!std::filesystem::exists(dir)) {
+        try {
+            std::filesystem::create_directory(dir);
+        }
+        catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << "Error creating directory: " << e.what() << std::endl;
+            return;
+        }
+    }
+
+    // 2. 确定文件名和数据源
+    std::string suffix;
+    bool is_quad_mode = false;
+
+    if (current_view_ == ViewMode::Triangles) {
+        suffix = "_tri.obj";
+    }
+    else if (current_view_ == ViewMode::Quads) {
+        suffix = "_quad.obj";
+        is_quad_mode = true;
+    }
+    else {
+        return; // 不在网格模式下，不导出
+    }
+
+    std::string filepath = dir + "/" + output_base_name_ + suffix;
+    std::ofstream out(filepath);
+    if (!out.is_open()) {
+        std::cerr << "Failed to open file for export: " << filepath << std::endl;
+        return;
+    }
+
+    std::cout << "[Export] Writing mesh to: " << filepath << " ..." << std::endl;
+
+    // 3. 写入顶点 (OBJ 格式: v x y z)
+    // 注意：目前我们使用 CGAL 生成的顶点。如果 QMorph 平滑更新了顶点，
+    // 这里导出的还是原始位置，除非我们更新了 cgal_generator_ 的数据。
+    // 这是一个简单的导出实现。
+    const auto& vertices = cgal_generator_->get_vertices();
+    for (const auto& v : vertices) {
+        out << "v " << v.x << " " << v.y << " 0.0\n";
+    }
+
+    // 4. 写入面 (OBJ 格式: f v1 v2 v3 ...)
+    // 注意: OBJ 索引是从 1 开始的
+    if (is_quad_mode) {
+        // 导出四边形
+        for (const auto& q : quads_) {
+            out << "f " << (q.v0 + 1) << " " << (q.v1 + 1) << " " << (q.v2 + 1) << " " << (q.v3 + 1) << "\n";
+        }
+        // 导出剩余的三角形 (混合网格)
+        for (const auto& t : remaining_triangles_) {
+            out << "f " << (t.v0 + 1) << " " << (t.v1 + 1) << " " << (t.v2 + 1) << "\n";
+        }
+    }
+    else {
+        // 导出纯三角网格
+        const auto& tris = cgal_generator_->get_triangles();
+        for (const auto& t : tris) {
+            out << "f " << (t.v0 + 1) << " " << (t.v1 + 1) << " " << (t.v2 + 1) << "\n";
+        }
+    }
+
+    out.close();
+    std::cout << "[Export] Done. (" << (is_quad_mode ? quads_.size() : 0) << " quads, "
+        << (is_quad_mode ? remaining_triangles_.size() : cgal_generator_->get_triangles().size()) << " tris)" << std::endl;
 }

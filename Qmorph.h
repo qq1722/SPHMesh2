@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <map>
+#include <queue>
 #include <glm/glm.hpp>
 #include "CGALMeshGenerator.h"
 
@@ -35,9 +36,36 @@ private:
         Edge edges[3];
     };
 
+    // Structure for Priority-Based Merging
+    struct PotentialQuad {
+        float quality;
+        Tri_idx t1, t2;
+        Vert_idx v1_shared, v2_shared; // The shared edge
+        Vert_idx v1_opp, v2_opp;       // The opposite vertices
+
+        // Priority queue orders by quality (max first)
+        bool operator<(const PotentialQuad& other) const {
+            return quality < other.quality;
+        }
+    };
+
     // --- 升级后的多阶段算法 ---
     void build_adjacency(const std::vector<CGALMeshGenerator::Triangle>& triangles);
     void initial_pair_merging(const std::vector<glm::vec2>& vertices, const std::vector<CGALMeshGenerator::Triangle>& triangles);
+
+    // Replaces initial_pair_merging with a threshold-based pass
+    int priority_merge_pass(const std::vector<glm::vec2>& vertices,
+        const std::vector<CGALMeshGenerator::Triangle>& triangles,
+        float quality_threshold);
+    // Laplacian smoothing for unmerged triangles
+    void smooth_vertices(std::vector<glm::vec2>& vertices,
+        const std::vector<CGALMeshGenerator::Triangle>& triangles);
+    // Calculate quality for a potential merge
+    PotentialQuad evaluate_merge(Tri_idx t1_idx, Tri_idx t2_idx,
+        const std::vector<CGALMeshGenerator::Triangle>& triangles,
+        const std::vector<glm::vec2>& vertices,
+        const Edge& shared_edge);
+
     void iterative_cleanup(const std::vector<glm::vec2>& vertices, std::vector<CGALMeshGenerator::Triangle>& triangles);
     void final_smoothing(std::vector<glm::vec2>& vertices, const Boundary& boundary); // 注意：需要边界信息
 
@@ -50,4 +78,6 @@ private:
     std::vector<Tri_adj> adj_list_;
     std::map<Edge, std::vector<Tri_idx>> edge_to_tri_map_;
     Result result_;
+
+    std::vector<bool> fixed_vertices_; // Vertices that shouldn't move during smoothing
 };

@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <fstream>
+#include <filesystem>
 
 #include "Shader.h"
 #include "Boundary.h"
@@ -30,6 +31,9 @@ public:
     void set_cgal_generator(CGALMeshGenerator* generator); // 新增
     void set_qmorph_generator(Qmorph* converter);
 
+    // [新增] 设置导出文件的基础名称 (例如 "teddy_chart_0")
+    void set_output_base_name(const std::string& base_name) { output_base_name_ = base_name; }
+
 private:
     void init();
     void main_loop();
@@ -52,6 +56,9 @@ private:
     void save_particle_snapshot();
     // 新增：为大小场设置缓冲区
     void setup_size_field_buffers();
+
+    // [新增] 导出当前显示的网格
+    void export_current_mesh();
 
 private:
     GLFWwindow* window_;
@@ -110,6 +117,7 @@ private:
     enum class ViewMode { Particles, SizeField, Triangles, Quads }; // <-- 增加 Quads 模式
     ViewMode current_view_ = ViewMode::Particles;
 
-   
+    // [新增]
+    std::string output_base_name_ = "output";
     
 };

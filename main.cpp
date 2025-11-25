@@ -177,6 +177,11 @@ int main() {
 
     Viewer viewer(1280, 720, "SPH Remeshing - Dynamic Mesh Generation");
 
+    // [新增] 设置导出文件的基础名称
+    // 格式: teddy_chart_0
+    std::string base_name = selected_model_name + "_chart_" + std::to_string(selected_chart_index);
+    viewer.set_output_base_name(base_name);
+
     viewer.set_boundary(&boundary);
     viewer.set_simulation2d(&sim);
     viewer.set_background_grid(sim.get_background_grid());
