@@ -1,46 +1,46 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <glm/glm.hpp>
 #include <string>
-#include "models.h" // <-- [ĞÂÔö] °üº¬ Chart2D ½Y˜‹¶¨Áx
+#include "models.h" // <-- [æ–°å¢] åŒ…å« Chart2D çµæ§‹å®šç¾©
 
 class Boundary
 {
 public:
-    // ¹¹Ôìº¯Êı: ½ÓÊÕÒ»¸ö Chart2D ¶ÔÏó (°üº¬Íâ»·ºÍÄÚ¶´)
-    Boundary(const Chart2D& chart); // <-- [ĞŞ¸Ä]
+    // æ„é€ å‡½æ•°: æ¥æ”¶ä¸€ä¸ª Chart2D å¯¹è±¡ (åŒ…å«å¤–ç¯å’Œå†…æ´)
+    Boundary(const Chart2D& chart); // <-- [ä¿®æ”¹]
 
-    // ÅĞ¶ÏÒ»¸öµãÊÇ·ñÔÚ±ß½çÄÚ²¿ (ÏÖÔÚ»á¿¼ÂÇÄÚ¶´)
+    // åˆ¤æ–­ä¸€ä¸ªç‚¹æ˜¯å¦åœ¨è¾¹ç•Œå†…éƒ¨ (ç°åœ¨ä¼šè€ƒè™‘å†…æ´)
     bool is_inside(const glm::vec2& point) const;
 
-    // »ñÈ¡ *Íâ* ±ß½çµÄËùÓĞ¶¥µã (ÓÃÓÚäÖÈ¾)
-    // ×¢Òâ£º¾ÉµÄ get_vertices() ÒÑÖØÃüÃûÎª get_outer_boundary()
-    const std::vector<glm::vec2>& get_outer_boundary() const; // <-- [ĞŞ¸Ä]
+    // è·å– *å¤–* è¾¹ç•Œçš„æ‰€æœ‰é¡¶ç‚¹ (ç”¨äºæ¸²æŸ“)
+    // æ³¨æ„ï¼šæ—§çš„ get_vertices() å·²é‡å‘½åä¸º get_outer_boundary()
+    const std::vector<glm::vec2>& get_outer_boundary() const; // <-- [ä¿®æ”¹]
 
-    // »ñÈ¡ÄÚ¶´ÁĞ±í (ÓÃÓÚ¾W¸ñÉú³É)
-    const std::vector<std::vector<glm::vec2>>& get_holes() const; // <-- [ĞÂÔö]
+    // è·å–å†…æ´åˆ—è¡¨ (ç”¨äºç¶²æ ¼ç”Ÿæˆ)
+    const std::vector<std::vector<glm::vec2>>& get_holes() const; // <-- [æ–°å¢]
 
-    // »ñÈ¡±ß½çµÄÖá¶ÔÆë°üÎ§ºĞ (AABB)
+    // è·å–è¾¹ç•Œçš„è½´å¯¹é½åŒ…å›´ç›’ (AABB)
     const glm::vec4& get_aabb() const;
 
-    // --- ÎªÁË¼æÈİ¾É´úÂë ---
-    // ¾ÉµÄ get_vertices() º¯ÊıÏÖÔÚÖ»·µ»ØÍâ»·
+    // --- ä¸ºäº†å…¼å®¹æ—§ä»£ç  ---
+    // æ—§çš„ get_vertices() å‡½æ•°ç°åœ¨åªè¿”å›å¤–ç¯
     const std::vector<glm::vec2>& get_vertices() const {
         return m_outer_boundary;
     }
-    // --- [ĞÂÔö] ºËĞÄĞŞ¸´¹¦ÄÜ ---
-    // ¼ÆËãµã p µ½Õû¸ö±ß½çÏµÍ³£¨Íâ»·»òÈÎÒâÄÚ¶´£©µÄ×î½üµã
+    // --- [æ–°å¢] æ ¸å¿ƒä¿®å¤åŠŸèƒ½ ---
+    // è®¡ç®—ç‚¹ p åˆ°æ•´ä¸ªè¾¹ç•Œç³»ç»Ÿï¼ˆå¤–ç¯æˆ–ä»»æ„å†…æ´ï¼‰çš„æœ€è¿‘ç‚¹
     glm::vec2 get_closest_point(const glm::vec2& p) const;
-    // [ĞÂÔö] »ñÈ¡×î½üµã *ÒÔ¼°* ¸Ã´¦µÄÇĞÏßµ¥Î»ÏòÁ¿
+    // [æ–°å¢] è·å–æœ€è¿‘ç‚¹ *ä»¥åŠ* è¯¥å¤„çš„åˆ‡çº¿å•ä½å‘é‡
     void get_closest_point_and_tangent(const glm::vec2& p, glm::vec2& out_closest, glm::vec2& out_tangent) const;
 
 private:
-    std::vector<glm::vec2> m_outer_boundary; // <-- [ĞŞ¸Ä]
-    std::vector<std::vector<glm::vec2>> m_holes; // <-- [ĞÂÔö]
+    std::vector<glm::vec2> m_outer_boundary; // <-- [ä¿®æ”¹]
+    std::vector<std::vector<glm::vec2>> m_holes; // <-- [æ–°å¢]
     glm::vec4 aabb_; // x_min, y_min, x_max, y_max
 
-    void calculate_aabb(); // Ë½ÓĞİoÖúº¯”µ
+    void calculate_aabb(); // ç§æœ‰è¼”åŠ©å‡½æ•¸
 
-    // ĞÂÔö: ìo‘BİoÖúº¯”µ£¬ÓÃì¶ Ray-Casting
+    // æ–°å¢: éœæ…‹è¼”åŠ©å‡½æ•¸ï¼Œç”¨æ–¼ Ray-Casting
     static bool is_inside_polygon(const glm::vec2& point, const std::vector<glm::vec2>& polygon);
 };

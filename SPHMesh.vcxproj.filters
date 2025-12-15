@@ -36,12 +36,6 @@
     <ClInclude Include="Utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DelaunayMeshGenerator.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="cdd.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="CGALMeshGenerator.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -65,16 +59,10 @@
     <ClCompile Include="BackgroundGrid.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DelaunayMeshGenerator.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="CGALMeshGenerator.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Qmorph.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="testpoject.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

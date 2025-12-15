@@ -1,16 +1,16 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <map>
 #include <queue>
 #include <glm/glm.hpp>
 #include "CGALMeshGenerator.h"
 
-// ÎªÁË±ÜÃâÑ­»·ÒıÓÃ£¬ÎÒÃÇÖ»½øĞĞÇ°ÏòÉùÃ÷
+// ä¸ºäº†é¿å…å¾ªç¯å¼•ç”¨ï¼Œæˆ‘ä»¬åªè¿›è¡Œå‰å‘å£°æ˜
 class CGALMeshGenerator;
 
 class Qmorph {
 public:
-    // ¶¨ÒåÊä³ö½á¹ûµÄ½á¹¹Ìå
+    // å®šä¹‰è¾“å‡ºç»“æœçš„ç»“æ„ä½“
     struct Result {
         std::vector<CGALMeshGenerator::Quad> quads;
         std::vector<CGALMeshGenerator::Triangle> remaining_triangles;
@@ -18,21 +18,21 @@ public:
 
     Qmorph() = default;
 
-    // ºËĞÄº¯Êı£º½ÓÊÕÒ»¸öÈı½ÇÍø¸ñ£¬·µ»ØÒ»¸öËÄ±ßĞÎÎªÖ÷µÄÍø¸ñ
+    // æ ¸å¿ƒå‡½æ•°ï¼šæ¥æ”¶ä¸€ä¸ªä¸‰è§’ç½‘æ ¼ï¼Œè¿”å›ä¸€ä¸ªå››è¾¹å½¢ä¸ºä¸»çš„ç½‘æ ¼
     Result run(const CGALMeshGenerator& delaunay_mesh);
 
 private:
-    // --- ÄÚ²¿Êı¾İ½á¹¹ ---
-    // Ê¹ÓÃ±ğÃûÈÃ´úÂë¸üÇåÎú
+    // --- å†…éƒ¨æ•°æ®ç»“æ„ ---
+    // ä½¿ç”¨åˆ«åè®©ä»£ç æ›´æ¸…æ™°
     using Tri_idx = size_t;
     using Vert_idx = unsigned int;
     using Edge = std::pair<Vert_idx, Vert_idx>;
 
-    // ´æ´¢Ã¿¸öÈı½ÇĞÎµÄÁÚ½ÓĞÅÏ¢
+    // å­˜å‚¨æ¯ä¸ªä¸‰è§’å½¢çš„é‚»æ¥ä¿¡æ¯
     struct Tri_adj {
-        // *** FIX: Ê¹ÓÃ SIZE_MAX ´úÌæ -1 À´±íÊ¾ÎŞĞ§Ë÷Òı ***
+        // *** FIX: ä½¿ç”¨ SIZE_MAX ä»£æ›¿ -1 æ¥è¡¨ç¤ºæ— æ•ˆç´¢å¼• ***
         Tri_idx neighbors[3] = { SIZE_MAX, SIZE_MAX, SIZE_MAX };
-        // ÁÚ¾ÓÊÇÍ¨¹ıÄÄÌõ±ßÁ¬½ÓµÄ
+        // é‚»å±…æ˜¯é€šè¿‡å“ªæ¡è¾¹è¿æ¥çš„
         Edge edges[3];
     };
 
@@ -49,7 +49,7 @@ private:
         }
     };
 
-    // --- Éı¼¶ºóµÄ¶à½×¶ÎËã·¨ ---
+    // --- å‡çº§åçš„å¤šé˜¶æ®µç®—æ³• ---
     void build_adjacency(const std::vector<CGALMeshGenerator::Triangle>& triangles);
     void initial_pair_merging(const std::vector<glm::vec2>& vertices, const std::vector<CGALMeshGenerator::Triangle>& triangles);
 
@@ -67,13 +67,13 @@ private:
         const Edge& shared_edge);
 
     void iterative_cleanup(const std::vector<glm::vec2>& vertices, std::vector<CGALMeshGenerator::Triangle>& triangles);
-    void final_smoothing(std::vector<glm::vec2>& vertices, const Boundary& boundary); // ×¢Òâ£ºĞèÒª±ß½çĞÅÏ¢
+    void final_smoothing(std::vector<glm::vec2>& vertices, const Boundary& boundary); // æ³¨æ„ï¼šéœ€è¦è¾¹ç•Œä¿¡æ¯
 
-    // --- ÖÊÁ¿ÆÀ¹ÀÓë¸¨Öúº¯Êı ---
+    // --- è´¨é‡è¯„ä¼°ä¸è¾…åŠ©å‡½æ•° ---
     float calculate_quad_quality(const glm::vec2& p0, const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3);
     Edge make_sorted_edge(Vert_idx v1, Vert_idx v2);
 
-    // --- ³ÉÔ±±äÁ¿ ---
+    // --- æˆå‘˜å˜é‡ ---
     std::vector<bool> merged_triangles_;
     std::vector<Tri_adj> adj_list_;
     std::map<Edge, std::vector<Tri_idx>> edge_to_tri_map_;

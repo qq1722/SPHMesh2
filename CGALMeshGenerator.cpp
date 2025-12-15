@@ -1,9 +1,9 @@
-#include "CGALMeshGenerator.h"
+ï»¿#include "CGALMeshGenerator.h"
 #include <iostream>
 #include <map>
 #include <vector>
 void mark_domains(CDT& cdt);
-// [ĞŞ¸Ä] generate_mesh 
+// [ä¿®æ”¹] generate_mesh 
 void CGALMeshGenerator::generate_mesh(const std::vector<Simulation2D::Particle>& particles, const Boundary& boundary) {
     vertices_.clear();
     triangles_.clear();
@@ -16,7 +16,7 @@ void CGALMeshGenerator::generate_mesh(const std::vector<Simulation2D::Particle>&
 
     CDT cdt;
 
-    // --- ²½óE 1: ²åÈëÍâß…½ç¼sÊø (¶¨Òå¼¸ºÎĞÎ×´) ---
+    // --- æ­¥é©Ÿ 1: æ’å…¥å¤–é‚Šç•Œç´„æŸ (å®šä¹‰å‡ ä½•å½¢çŠ¶) ---
     CDT::Vertex_handle v_start;
     CDT::Vertex_handle v_prev;
     for (const auto& p : outer_boundary_verts) {
@@ -29,9 +29,9 @@ void CGALMeshGenerator::generate_mesh(const std::vector<Simulation2D::Particle>&
         }
         v_prev = vh;
     }
-    cdt.insert_constraint(v_prev, v_start); // é]ºÏÍâ­h
+    cdt.insert_constraint(v_prev, v_start); // é–‰åˆå¤–ç’°
 
-    // --- ²½óE 2: ²åÈëËùÓĞƒÈ¶´¼sÊø ---
+    // --- æ­¥é©Ÿ 2: æ’å…¥æ‰€æœ‰å…§æ´ç´„æŸ ---
     for (const auto& hole_verts : holes_list) {
         if (hole_verts.empty()) continue;
         CDT::Vertex_handle h_v_start;
@@ -46,46 +46,46 @@ void CGALMeshGenerator::generate_mesh(const std::vector<Simulation2D::Particle>&
             }
             h_v_prev = vh;
         }
-        cdt.insert_constraint(h_v_prev, h_v_start); // é]ºÏƒÈ¶´
+        cdt.insert_constraint(h_v_prev, h_v_start); // é–‰åˆå…§æ´
     }
 
-    // --- ²½óE 3: ²åÈëËùÓĞ SPH Á£×Ó (ºËĞÄĞŞ¸´) ---
-    // [ĞŞ¸´] ÎÒÃÇ±ØĞë²åÈëËùÓĞÁ£×Ó£¬°üÀ¨±ß½çÁ£×Ó£¡
-    // ¼´Ê¹±ß½çÁ£×ÓµÄÎ»ÖÃ¿ÉÄÜÓëÔ¼Êø±ßÖØºÏ£¬CGAL Ò²»á×Ô¶¯´¦Àí£¨·ÖÁÑÔ¼Êø±ß£©¡£
-    // ÕâÑù²ÅÄÜ±£Ö¤Éú³ÉµÄÍø¸ñ±ß½ç¶¥µãÓë SPH Á£×ÓÒ»Ò»¶ÔÓ¦¡£
+    // --- æ­¥é©Ÿ 3: æ’å…¥æ‰€æœ‰ SPH ç²’å­ (æ ¸å¿ƒä¿®å¤) ---
+    // [ä¿®å¤] æˆ‘ä»¬å¿…é¡»æ’å…¥æ‰€æœ‰ç²’å­ï¼ŒåŒ…æ‹¬è¾¹ç•Œç²’å­ï¼
+    // å³ä½¿è¾¹ç•Œç²’å­çš„ä½ç½®å¯èƒ½ä¸çº¦æŸè¾¹é‡åˆï¼ŒCGAL ä¹Ÿä¼šè‡ªåŠ¨å¤„ç†ï¼ˆåˆ†è£‚çº¦æŸè¾¹ï¼‰ã€‚
+    // è¿™æ ·æ‰èƒ½ä¿è¯ç”Ÿæˆçš„ç½‘æ ¼è¾¹ç•Œé¡¶ç‚¹ä¸ SPH ç²’å­ä¸€ä¸€å¯¹åº”ã€‚
     std::vector<Point> all_points;
     for (const auto& p : particles) {
-        // ÒÆ³ı if (!p.is_boundary) µÄÅĞ¶Ï
+        // ç§»é™¤ if (!p.is_boundary) çš„åˆ¤æ–­
         all_points.emplace_back(p.position.x, p.position.y);
     }
-    // ÅúÁ¿²åÈë±ÈÖğ¸ö²åÈëĞ§ÂÊ¸ü¸ß
+    // æ‰¹é‡æ’å…¥æ¯”é€ä¸ªæ’å…¥æ•ˆç‡æ›´é«˜
     cdt.insert(all_points.begin(), all_points.end());
 
-    // --- ²½óE 4: ˜ËÓ›Óò (ÄÄĞ©Èı½ÇĞÎÔÚ "ƒÈ²¿") ---
+    // --- æ­¥é©Ÿ 4: æ¨™è¨˜åŸŸ (å“ªäº›ä¸‰è§’å½¢åœ¨ "å…§éƒ¨") ---
     mark_domains(cdt);
 
-    // --- ²½óE 5: ÌáÈ¡Î»ì¶ÓòƒÈ²¿µÄÈı½ÇĞÎ ---
-    // ÎÒÃÇĞèÒªÒ»¸öÓ³ÉäÀ´½« CGAL µÄ¶¥µã¾ä±ú×ª»»ÎªÎÒÃÇ×Ô¼ºµÄË÷Òı
+    // --- æ­¥é©Ÿ 5: æå–ä½æ–¼åŸŸå…§éƒ¨çš„ä¸‰è§’å½¢ ---
+    // æˆ‘ä»¬éœ€è¦ä¸€ä¸ªæ˜ å°„æ¥å°† CGAL çš„é¡¶ç‚¹å¥æŸ„è½¬æ¢ä¸ºæˆ‘ä»¬è‡ªå·±çš„ç´¢å¼•
     std::map<CDT::Vertex_handle, unsigned int> vertex_map;
 
     for (auto fit = cdt.finite_faces_begin(); fit != cdt.finite_faces_end(); ++fit) {
-        // `in_domain()` Âß¼­£ºÆæÊı²ã¼¶ÔÚÄÚ²¿ (1, 3...), Å¼Êı²ã¼¶ÔÚÍâ²¿ (0, 2...)
-        // 0: Íâ²¿ÎŞÏŞÓò
-        // 1: Íâ»·ÄÚ²¿
-        // 2: ÄÚ¶´ÄÚ²¿ (¼´¶à±ßĞÎÍâ²¿)
+        // `in_domain()` é€»è¾‘ï¼šå¥‡æ•°å±‚çº§åœ¨å†…éƒ¨ (1, 3...), å¶æ•°å±‚çº§åœ¨å¤–éƒ¨ (0, 2...)
+        // 0: å¤–éƒ¨æ— é™åŸŸ
+        // 1: å¤–ç¯å†…éƒ¨
+        // 2: å†…æ´å†…éƒ¨ (å³å¤šè¾¹å½¢å¤–éƒ¨)
         if (fit->info().nesting_level % 2 == 1) {
             unsigned int v_indices[3];
             for (int i = 0; i < 3; ++i) {
                 CDT::Vertex_handle vh = fit->vertex(i);
 
-                // Èç¹ûÊÇĞÂí”üc£¬Ìí¼Óµ½ÎÒ‚ƒµÄí”ücÁĞ±íKÓ›ä›ÆäË÷Òı
+                // å¦‚æœæ˜¯æ–°é ‚é»ï¼Œæ·»åŠ åˆ°æˆ‘å€‘çš„é ‚é»åˆ—è¡¨ä¸¦è¨˜éŒ„å…¶ç´¢å¼•
                 if (vertex_map.find(vh) == vertex_map.end()) {
                     vertex_map[vh] = (unsigned int)vertices_.size();
                     vertices_.emplace_back(vh->point().x(), vh->point().y());
                 }
                 v_indices[i] = vertex_map[vh];
             }
-            // Ìí¼ÓÕâ¸öºÏ¸ñµÄÈı½ÇĞÎ
+            // æ·»åŠ è¿™ä¸ªåˆæ ¼çš„ä¸‰è§’å½¢
             triangles_.push_back({ v_indices[0], v_indices[1], v_indices[2] });
         }
     }
@@ -101,7 +101,7 @@ void CGALMeshGenerator::generate_mesh(const std::vector<Simulation2D::Particle>&
 //    }
 //    std::vector<CDT::Face_handle> q;
 //    q.push_back(cdt.infinite_face());
-//    q.front()->info().nesting_level = 0; // Íâ²¿Óò
+//    q.front()->info().nesting_level = 0; // å¤–éƒ¨åŸŸ
 //
 //    std::size_t head = 0;
 //    while (head < q.size()) {
@@ -110,7 +110,7 @@ void CGALMeshGenerator::generate_mesh(const std::vector<Simulation2D::Particle>&
 //        for (int i = 0; i < 3; ++i) {
 //            CDT::Face_handle nfh = fh->neighbor(i);
 //            if (nfh->info().nesting_level == 0 && nfh != cdt.infinite_face()) {
-//                // Ç¶Ì×¼¶±ğÔÚ´©¹ıÔ¼Êø±ßÊ± +1
+//                // åµŒå¥—çº§åˆ«åœ¨ç©¿è¿‡çº¦æŸè¾¹æ—¶ +1
 //                if (cdt.is_constrained(CDT::Edge(fh, i))) {
 //                    nfh->info().nesting_level = current_level + 1;
 //                }
@@ -123,15 +123,15 @@ void CGALMeshGenerator::generate_mesh(const std::vector<Simulation2D::Particle>&
 //    }
 //}
 
-// --- [ĞÂÔö] CGAL Óò±ê¼Ç¸¨Öúº¯Êı ---
-// ˜ËÓ› Cdt ÓòµÄÇ¶Ì×¼‰„e (ÕâÊÇCGAL´¦Àí´ø¿×¶à±ßĞÎµÄ±ê×¼·½·¨)
-// 0 = Íâ²¿ÎŞÏŞÇøÓò, 1 = ÄÚ²¿, 2 = ÄÚ²¿µÄ¶´, 3 = ¶´ÀïµÄµº...
+// --- [æ–°å¢] CGAL åŸŸæ ‡è®°è¾…åŠ©å‡½æ•° ---
+// æ¨™è¨˜ Cdt åŸŸçš„åµŒå¥—ç´šåˆ¥ (è¿™æ˜¯CGALå¤„ç†å¸¦å­”å¤šè¾¹å½¢çš„æ ‡å‡†æ–¹æ³•)
+// 0 = å¤–éƒ¨æ— é™åŒºåŸŸ, 1 = å†…éƒ¨, 2 = å†…éƒ¨çš„æ´, 3 = æ´é‡Œçš„å²›...
 void mark_domains(CDT& cdt) {
     for (auto fit = cdt.all_faces_begin(); fit != cdt.all_faces_end(); ++fit) {
         fit->info().nesting_level = 0;
     }
 
-    // ´ÓÎŞÏŞÃæ£¨Íâ²¿£©¿ªÊ¼¹ã¶ÈÓÅÏÈËÑË÷
+    // ä»æ— é™é¢ï¼ˆå¤–éƒ¨ï¼‰å¼€å§‹å¹¿åº¦ä¼˜å…ˆæœç´¢
     std::vector<CDT::Face_handle> q;
     q.push_back(cdt.infinite_face());
     q.front()->info().nesting_level = 0;
@@ -143,15 +143,15 @@ void mark_domains(CDT& cdt) {
 
         for (int i = 0; i < 3; ++i) {
             CDT::Face_handle nfh = fh->neighbor(i);
-            // Èç¹ûÁÚ¾Ó»¹Ã»ÓĞ±»±ê¼Ç
+            // å¦‚æœé‚»å±…è¿˜æ²¡æœ‰è¢«æ ‡è®°
             if (nfh->info().nesting_level == 0 && nfh != cdt.infinite_face()) {
-                // ¼ì²é¹«¹²±ßÊÇ·ñÊÇÔ¼Êø±ß
+                // æ£€æŸ¥å…¬å…±è¾¹æ˜¯å¦æ˜¯çº¦æŸè¾¹
                 if (cdt.is_constrained(CDT::Edge(fh, i))) {
-                    // ´©¹ıÔ¼Êø±ß£¬Ç¶Ì×¼¶±ğ +1
+                    // ç©¿è¿‡çº¦æŸè¾¹ï¼ŒåµŒå¥—çº§åˆ« +1
                     nfh->info().nesting_level = current_level + 1;
                 }
                 else {
-                    // Î´´©¹ıÔ¼Êø±ß£¬¼¶±ğ±£³Ö²»±ä
+                    // æœªç©¿è¿‡çº¦æŸè¾¹ï¼Œçº§åˆ«ä¿æŒä¸å˜
                     nfh->info().nesting_level = current_level;
                 }
                 q.push_back(nfh);

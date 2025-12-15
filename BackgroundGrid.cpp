@@ -1,12 +1,12 @@
-#include "BackgroundGrid.h"
+ï»¿#include "BackgroundGrid.h"
 #include "Utils.h"
 #include <algorithm>
 #include <vector>
-#include <glm/gtc/constants.hpp> // ÎªÁË glm::pi
+#include <glm/gtc/constants.hpp> // ä¸ºäº† glm::pi
 
-// [ĞŞ¸Ä] ¹¹Ôìº¯ÊıÊµÏÖ
+// [ä¿®æ”¹] æ„é€ å‡½æ•°å®ç°
 BackgroundGrid::BackgroundGrid(const Boundary& boundary, float grid_cell_size, float refinement_level, float h_min, float h_max)
-    : refinement_level_(refinement_level), h_min_(h_min), h_max_(h_max) // ´æ´¢´«ÈëµÄÖµ
+    : refinement_level_(refinement_level), h_min_(h_min), h_max_(h_max) // å­˜å‚¨ä¼ å…¥çš„å€¼
 {
     cell_size_ = grid_cell_size;
     const auto& aabb = boundary.get_aabb();
@@ -17,22 +17,22 @@ BackgroundGrid::BackgroundGrid(const Boundary& boundary, float grid_cell_size, f
     target_size_field_.resize(width_ * height_);
     target_direction_field_.resize(width_ * height_, { 1.0f, 0.0f });
 
-    // ÏÖÔÚ h_min_ ºÍ h_max_ ÒÑ¾­ÓĞÕıÈ·µÄÖµÁË
+    // ç°åœ¨ h_min_ å’Œ h_max_ å·²ç»æœ‰æ­£ç¡®çš„å€¼äº†
     compute_fields(boundary);
 }
 
-// ºËĞÄĞŞ¸Ä£º¼ÆËã h_t ºÍ D_t
+// æ ¸å¿ƒä¿®æ”¹ï¼šè®¡ç®— h_t å’Œ D_t
 void BackgroundGrid::compute_fields(const Boundary& boundary) {
    /* const auto& boundary_vertices = boundary.get_vertices();
     if (boundary_vertices.size() < 2) return;*/
 
-    //// --- 1. ¼ÆËã h_min ºÍ h_max ---
-    //h_min_ = cell_size_ * 0.5f; // ±ß½ç×îÃÜ¼¯µÄ¼ä¾à (±£´æÎª³ÉÔ±)
+    //// --- 1. è®¡ç®— h_min å’Œ h_max ---
+    //h_min_ = cell_size_ * 0.5f; // è¾¹ç•Œæœ€å¯†é›†çš„é—´è· (ä¿å­˜ä¸ºæˆå‘˜)
 
-    //// ÄÚ²¿×îÏ¡ÊèµÄ¼ä¾à£ºÈçÄúËùËµ "±È±ßÔµÃÜ¼¯ÉÔÎ¢¶àÒ»µãµã"
+    //// å†…éƒ¨æœ€ç¨€ç–çš„é—´è·ï¼šå¦‚æ‚¨æ‰€è¯´ "æ¯”è¾¹ç¼˜å¯†é›†ç¨å¾®å¤šä¸€ç‚¹ç‚¹"
     //float h_max = h_min_ * 1.5f;
 
-    // --- 2. ¼ÆËãSDFºÍ³ß´ç³¡ h_t (»Ö¸´ÄúÔ­À´µÄ t*t Âß¼­) ---
+    // --- 2. è®¡ç®—SDFå’Œå°ºå¯¸åœº h_t (æ¢å¤æ‚¨åŸæ¥çš„ t*t é€»è¾‘) ---
     std::vector<float> sdf(width_ * height_, FLT_MAX);
     for (int y = 0; y < height_; ++y) {
         for (int x = 0; x < width_; ++x) {
@@ -43,48 +43,48 @@ void BackgroundGrid::compute_fields(const Boundary& boundary) {
             sdf[y * width_ + x] = sdf_value;*/
             glm::vec2 grid_pos = min_coords_ + glm::vec2(x * cell_size_, y * cell_size_);
 
-            // [ºËĞÄĞŞ¸´]
-            // Ê¹ÓÃÎÒÃÇÖ®Ç°Ğ´µÄ¡¢ÄÜ¸ĞÖªÄÚ¶´µÄ get_closest_point º¯Êı
+            // [æ ¸å¿ƒä¿®å¤]
+            // ä½¿ç”¨æˆ‘ä»¬ä¹‹å‰å†™çš„ã€èƒ½æ„ŸçŸ¥å†…æ´çš„ get_closest_point å‡½æ•°
             glm::vec2 closest_pt = boundary.get_closest_point(grid_pos);
             float dist_to_boundary = glm::distance(grid_pos, closest_pt);
 
-            // SDF ¼ÆËã
+            // SDF è®¡ç®—
             sdf[y * width_ + x] = boundary.is_inside(grid_pos) ? dist_to_boundary : -dist_to_boundary;
 
-            // --- [ºËĞÄĞŞ¸Ä] ---
-                 // influence_radius ÏÖÔÚÓÉ h_max ºÍÄã×Ô¶¨ÒåµÄ "¼ÓÃÜ²ãÊı" ¾ö¶¨
-                 // ±ÈÈç h_max=1.0, refinement_level=5, ÔòÓ°Ïì°ë¾¶Îª 5.0
+            // --- [æ ¸å¿ƒä¿®æ”¹] ---
+                 // influence_radius ç°åœ¨ç”± h_max å’Œä½ è‡ªå®šä¹‰çš„ "åŠ å¯†å±‚æ•°" å†³å®š
+                 // æ¯”å¦‚ h_max=1.0, refinement_level=5, åˆ™å½±å“åŠå¾„ä¸º 5.0
             float influence_radius = h_max_ * refinement_level_;
             float t = std::min(dist_to_boundary / influence_radius, 1.0f);
 
-            // t*t Ê¹µÃ¿¿½ü±ß½ç(t=0)Ê±³ß´çÔö³¤»ºÂı (±£³Öh_min)
+            // t*t ä½¿å¾—é è¿‘è¾¹ç•Œ(t=0)æ—¶å°ºå¯¸å¢é•¿ç¼“æ…¢ (ä¿æŒh_min)
             target_size_field_[y * width_ + x] = glm::mix(h_min_, h_max_, t * t);
         }
     }
 
-    // --- 3. ¼ÆËã·½Ïò³¡ D_t (¹Ø¼üĞŞ¸Ä£ºÊ¹ÓÃSDFÌİ¶È£¬¶ø²»ÊÇÇĞÏß) ---
-    // Õâ¸ö³¡´Ó±ß½çÖ¸ÏòÖĞĞÄ£¬¶ÔÓÚºş²´ºÍÕı·½ĞÎ¶¼ÊÇÎÈ¶¨µÄ¡£
+    // --- 3. è®¡ç®—æ–¹å‘åœº D_t (å…³é”®ä¿®æ”¹ï¼šä½¿ç”¨SDFæ¢¯åº¦ï¼Œè€Œä¸æ˜¯åˆ‡çº¿) ---
+    // è¿™ä¸ªåœºä»è¾¹ç•ŒæŒ‡å‘ä¸­å¿ƒï¼Œå¯¹äºæ¹–æ³Šå’Œæ­£æ–¹å½¢éƒ½æ˜¯ç¨³å®šçš„ã€‚
     for (int y = 1; y < height_ - 1; ++y) {
         for (int x = 1; x < width_ - 1; ++x) {
-            // Ê¹ÓÃÖĞĞÄ²î·Ö¼ÆËãSDFÌİ¶È
+            // ä½¿ç”¨ä¸­å¿ƒå·®åˆ†è®¡ç®—SDFæ¢¯åº¦
             float grad_x = (sdf[y * width_ + (x + 1)] - sdf[y * width_ + (x - 1)]) / (2.0f * cell_size_);
             float grad_y = (sdf[(y + 1) * width_ + x] - sdf[(y - 1) * width_ + x]) / (2.0f * cell_size_);
             glm::vec2 grad = { grad_x, grad_y };
 
             if (glm::length(grad) > 1e-6f) {
-                // ·½Ïò³¡ D_t Ö±½ÓÉèÎª¹éÒ»»¯µÄSDFÌİ¶È (¾¶Ïò)
+                // æ–¹å‘åœº D_t ç›´æ¥è®¾ä¸ºå½’ä¸€åŒ–çš„SDFæ¢¯åº¦ (å¾„å‘)
                /* target_direction_field_[y * width_ + x] = glm::normalize(grad);*/
                 glm::vec2 tangent = { -grad.y, grad.x };
                 target_direction_field_[y * width_ + x] = glm::normalize(tangent);
             }
-            // Èç¹ûÌİ¶ÈÎª0 (ÀıÈçÔÚÖĞĞÄ), Ëü½«±£³ÖÄ¬ÈÏµÄ (1,0)
+            // å¦‚æœæ¢¯åº¦ä¸º0 (ä¾‹å¦‚åœ¨ä¸­å¿ƒ), å®ƒå°†ä¿æŒé»˜è®¤çš„ (1,0)
         }
     }
 }
 
-// Ë«ÏßĞÔ²åÖµ»ñÈ¡ÈÎÒâÎ»ÖÃµÄÄ¿±êÊı¾İ
+// åŒçº¿æ€§æ’å€¼è·å–ä»»æ„ä½ç½®çš„ç›®æ ‡æ•°æ®
 float BackgroundGrid::get_target_size(const glm::vec2& pos) const {
-    // ... (´úÂëÓëÉÏÒ»°æÏàÍ¬) ...
+    // ... (ä»£ç ä¸ä¸Šä¸€ç‰ˆç›¸åŒ) ...
     glm::vec2 local_pos = (pos - min_coords_) / cell_size_;
     int x0 = static_cast<int>(local_pos.x);
     int y0 = static_cast<int>(local_pos.y);
@@ -104,7 +104,7 @@ float BackgroundGrid::get_target_size(const glm::vec2& pos) const {
 }
 
 glm::vec2 BackgroundGrid::get_target_direction(const glm::vec2& pos) const {
-    // ... (Ë«ÏßĞÔ²åÖµ) ...
+    // ... (åŒçº¿æ€§æ’å€¼) ...
     glm::vec2 local_pos = (pos - min_coords_) / cell_size_;
     int x0 = static_cast<int>(local_pos.x);
     int y0 = static_cast<int>(local_pos.y);

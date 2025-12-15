@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <glm/glm.hpp>
 #include <algorithm> // for std::min/max
@@ -6,19 +6,19 @@
 #include <cmath> // for sin, cos
 #include <random> // for random numbers
 
-// ĞÂÔöµÄÍ·ÎÄ¼ş
-#include <fstream>   // ÓÃÓÚÎÄ¼şÊäÈë (std::ifstream)
-#include <sstream>   // ÓÃÓÚ½âÎöÃ¿ĞĞ (std::stringstream)
-#include <string>    // ÓÃÓÚ´¦ÀíÎÄ¼şÃû (std::string)
+// æ–°å¢çš„å¤´æ–‡ä»¶
+#include <fstream>   // ç”¨äºæ–‡ä»¶è¾“å…¥ (std::ifstream)
+#include <sstream>   // ç”¨äºè§£ææ¯è¡Œ (std::stringstream)
+#include <string>    // ç”¨äºå¤„ç†æ–‡ä»¶å (std::string)
 
 
-// --- ĞÂÔöÊı¾İ½á¹¹ ---
-// ÓÃÓÚ´æ´¢Ò»¸ö2DÍ¼±í£¨Ãæ£©£¬°üº¬Ò»¸öÍâ±ß½çºÍ¶à¸ö£¨»òÁã¸ö£©ÄÚ¶´
+// --- æ–°å¢æ•°æ®ç»“æ„ ---
+// ç”¨äºå­˜å‚¨ä¸€ä¸ª2Då›¾è¡¨ï¼ˆé¢ï¼‰ï¼ŒåŒ…å«ä¸€ä¸ªå¤–è¾¹ç•Œå’Œå¤šä¸ªï¼ˆæˆ–é›¶ä¸ªï¼‰å†…æ´
 struct Chart2D {
-    std::vector<glm::vec2> boundary; // Íâ±ß½ç
-    std::vector<std::vector<glm::vec2>> holes; // ¶´µÄÁĞ±í£¨Ã¿¸ö¶´¶¼ÊÇÒ»¸ö¶¥µãÁĞ±í£©
+    std::vector<glm::vec2> boundary; // å¤–è¾¹ç•Œ
+    std::vector<std::vector<glm::vec2>> holes; // æ´çš„åˆ—è¡¨ï¼ˆæ¯ä¸ªæ´éƒ½æ˜¯ä¸€ä¸ªé¡¶ç‚¹åˆ—è¡¨ï¼‰
 
-    // ¸¨Öúº¯Êı£¬¼ì²é´ËÍ¼±íÊÇ·ñÓĞĞ§¼ÓÔØ
+    // è¾…åŠ©å‡½æ•°ï¼Œæ£€æŸ¥æ­¤å›¾è¡¨æ˜¯å¦æœ‰æ•ˆåŠ è½½
     bool IsValid() const {
         return !boundary.empty();
     }
@@ -26,19 +26,19 @@ struct Chart2D {
 
 
 // ----------------------------------------------------------------
-// ÄÚ²¿¸¨Öúº¯ÊıºÍ¾Éº¯Êı
+// å†…éƒ¨è¾…åŠ©å‡½æ•°å’Œæ—§å‡½æ•°
 // ----------------------------------------------------------------
 
-// Ò»¸ö¼òµ¥µÄº¯Êı£¬ÓÃÓÚÉú³É0µ½1Ö®¼äµÄËæ»ú¸¡µãÊı
+// ä¸€ä¸ªç®€å•çš„å‡½æ•°ï¼Œç”¨äºç”Ÿæˆ0åˆ°1ä¹‹é—´çš„éšæœºæµ®ç‚¹æ•°
 inline float random_float(float min, float max) {
     static std::mt19937 generator(std::random_device{}());
     std::uniform_real_distribution<float> distribution(min, max);
     return distribution(generator);
 }
 
-// (¾Éº¯Êı - ÒÑ¸üĞÂÒÔ·µ»Ø Chart2D)
+// (æ—§å‡½æ•° - å·²æ›´æ–°ä»¥è¿”å› Chart2D)
 inline Chart2D create_complex_lake(int num_vertices, float avg_radius, float irregularity, float spikeyness) {
-    Chart2D chart; // ĞÂµÄ·µ»ØÀàĞÍ
+    Chart2D chart; // æ–°çš„è¿”å›ç±»å‹
     float angle_step = 2.0f * 3.1415926535f / num_vertices;
 
     for (int i = 0; i < num_vertices; ++i) {
@@ -55,13 +55,13 @@ inline Chart2D create_complex_lake(int num_vertices, float avg_radius, float irr
         float y = radius * sin(angle);
         chart.boundary.push_back({ x, y });
     }
-    // .holes ÁĞ±íÄ¬ÈÏÎª¿Õ
+    // .holes åˆ—è¡¨é»˜è®¤ä¸ºç©º
     return chart;
 }
 
-// (¾Éº¯Êı - ÒÑ¸üĞÂÒÔ·µ»Ø Chart2D ²¢½øĞĞ¹éÒ»»¯)
+// (æ—§å‡½æ•° - å·²æ›´æ–°ä»¥è¿”å› Chart2D å¹¶è¿›è¡Œå½’ä¸€åŒ–)
 inline Chart2D get_lake_shape_vertices() {
-    Chart2D chart; // ĞÂµÄ·µ»ØÀàĞÍ
+    Chart2D chart; // æ–°çš„è¿”å›ç±»å‹
     chart.boundary = {
         {2.2f, 8.1f}, {4.5f, 9.2f}, {7.3f, 8.5f}, {9.1f, 6.7f},
         {10.5f, 4.2f}, {11.2f, 1.5f}, {10.1f, -1.1f}, {8.3f, -3.2f},
@@ -70,7 +70,7 @@ inline Chart2D get_lake_shape_vertices() {
         {-2.5f, 7.1f}, {0.1f, 6.5f}
     };
 
-    // ¹éÒ»»¯´¦Àí
+    // å½’ä¸€åŒ–å¤„ç†
     if (chart.boundary.empty()) return chart;
 
     glm::vec2 min_coords = chart.boundary[0];
@@ -84,25 +84,25 @@ inline Chart2D get_lake_shape_vertices() {
     glm::vec2 center = (min_coords + max_coords) * 0.5f;
     glm::vec2 size = max_coords - min_coords;
     float max_dim = std::max(size.x, size.y);
-    float target_size = 10.0f; // Ä¿±ê³ß´ç
+    float target_size = 10.0f; // ç›®æ ‡å°ºå¯¸
     float scale = (max_dim > 1e-6) ? (target_size / max_dim) : 1.0f;
     for (auto& v : chart.boundary) {
         v = (v - center) * scale;
     }
 
-    // .holes ÁĞ±íÄ¬ÈÏÎª¿Õ
+    // .holes åˆ—è¡¨é»˜è®¤ä¸ºç©º
     return chart;
 }
 
 
-// --- ÄÚ²¿¸¨Öúº¯Êı ---
-// ´Óµ¥¸öÎÄ¼ş¼ÓÔØ¶¥µã£¬²»½øĞĞ¹éÒ»»¯
-// ¼ÙÉè×îºóÒ»¸öµãÊÇÓëµÚÒ»¸öµãÖØ¸´µÄ£¬²¢ÒÆ³ıËü
+// --- å†…éƒ¨è¾…åŠ©å‡½æ•° ---
+// ä»å•ä¸ªæ–‡ä»¶åŠ è½½é¡¶ç‚¹ï¼Œä¸è¿›è¡Œå½’ä¸€åŒ–
+// å‡è®¾æœ€åä¸€ä¸ªç‚¹æ˜¯ä¸ç¬¬ä¸€ä¸ªç‚¹é‡å¤çš„ï¼Œå¹¶ç§»é™¤å®ƒ
 inline std::vector<glm::vec2> load_polygon_from_file_raw(const std::string& full_path) {
     std::vector<glm::vec2> vertices;
     std::ifstream file(full_path);
 
-    // ×¢Òâ£ºÈç¹ûÎÄ¼ş´ò²»¿ª£¨ÀıÈç£¬ÔÚÌ½²âholeÎÄ¼şÊ±£©£¬Ö»·µ»Ø¿ÕÏòÁ¿ÊÇÕı³£µÄ
+    // æ³¨æ„ï¼šå¦‚æœæ–‡ä»¶æ‰“ä¸å¼€ï¼ˆä¾‹å¦‚ï¼Œåœ¨æ¢æµ‹holeæ–‡ä»¶æ—¶ï¼‰ï¼Œåªè¿”å›ç©ºå‘é‡æ˜¯æ­£å¸¸çš„
     if (!file.is_open()) {
         return vertices;
     }
@@ -117,7 +117,7 @@ inline std::vector<glm::vec2> load_polygon_from_file_raw(const std::string& full
     }
     file.close();
 
-    // ÒÆ³ı×îºóÒ»¸ö¶àÓàµÄµã£¨±ÕºÏµã£©
+    // ç§»é™¤æœ€åä¸€ä¸ªå¤šä½™çš„ç‚¹ï¼ˆé—­åˆç‚¹ï¼‰
     if (!vertices.empty()) {
         vertices.pop_back();
     }
@@ -125,66 +125,144 @@ inline std::vector<glm::vec2> load_polygon_from_file_raw(const std::string& full
 }
 
 
-// --- ĞÂÔöµÄÖ÷¹¦ÄÜº¯Êı ---
+// --- æ–°å¢çš„ä¸»åŠŸèƒ½å‡½æ•° ---
 //
-// ¸ù¾İÄ£ĞÍÃûºÍÍ¼±íË÷Òı£¬¼ÓÔØÒ»¸öÍêÕûµÄ2DÍ¼±í£¨°üº¬Íâ»·ºÍËùÓĞÄÚ¶´£©
-// ²¢¶ÔËùÓĞ²¿·Ö½øĞĞ*Í³Ò»*µÄ¹éÒ»»¯´¦Àí
+// æ ¹æ®æ¨¡å‹åå’Œå›¾è¡¨ç´¢å¼•ï¼ŒåŠ è½½ä¸€ä¸ªå®Œæ•´çš„2Då›¾è¡¨ï¼ˆåŒ…å«å¤–ç¯å’Œæ‰€æœ‰å†…æ´ï¼‰
+// å¹¶å¯¹æ‰€æœ‰éƒ¨åˆ†è¿›è¡Œ*ç»Ÿä¸€*çš„å½’ä¸€åŒ–å¤„ç†
 //
-// ²ÎÊı:
-//   model_name: Ä£ĞÍÃû³Æ (ÀıÈç "model", "cube")
-//   chart_index: Í¼±íË÷Òı (ÀıÈç 0, 1, ...)
+// å‚æ•°:
+//   model_name: æ¨¡å‹åç§° (ä¾‹å¦‚ "model", "cube")
+//   chart_index: å›¾è¡¨ç´¢å¼• (ä¾‹å¦‚ 0, 1, ...)
 //
-// *** ÖØÒª¼ÙÉè ***
-// ¸ù¾İÄãÖ®Ç°µÄÊ¾ÀıÎÄ¼ş£¨ÀıÈç "model_chart_0_boundary.txt"£©
-// ÎÒ¼ÙÉèÍêÕûµÄÎÄ¼şÃû¸ñÊ½ÊÇÊ¹ÓÃÏÂ»®Ïß "_" Á¬½ÓµÄ£¬ÈçÏÂËùÊ¾£º
-//   - Íâ»·: exportdata/Ä£ĞÍÃû_chart_Ë÷Òı_boundary.txt
-//   - ÄÚ¶´: exportdata/Ä£ĞÍÃû_chart_Ë÷Òı_hole_K.txt  (K=0, 1, 2...)
+// *** é‡è¦å‡è®¾ ***
+// æ ¹æ®ä½ ä¹‹å‰çš„ç¤ºä¾‹æ–‡ä»¶ï¼ˆä¾‹å¦‚ "model_chart_0_boundary.txt"ï¼‰
+// æˆ‘å‡è®¾å®Œæ•´çš„æ–‡ä»¶åæ ¼å¼æ˜¯ä½¿ç”¨ä¸‹åˆ’çº¿ "_" è¿æ¥çš„ï¼Œå¦‚ä¸‹æ‰€ç¤ºï¼š
+//   - å¤–ç¯: exportdata/æ¨¡å‹å_chart_ç´¢å¼•_boundary.txt
+//   - å†…æ´: exportdata/æ¨¡å‹å_chart_ç´¢å¼•_hole_K.txt  (K=0, 1, 2...)
 //
-inline Chart2D load_chart_by_index(const std::string& model_name, int chart_index) {
+//inline Chart2D load_chart_by_index(const std::string& model_name, int chart_index) {
+//
+//    Chart2D chart;
+//    std::stringstream ss_filename;
+//
+//    // 1. åŠ è½½å¤–è¾¹ç•Œ
+//    // æ ¼å¼: exportdata/model_name_chart_index_boundary.txt
+//    ss_filename << "exportdata/" << model_name << "_chart_" << chart_index << "_boundary.txt";
+//    std::string boundary_path = ss_filename.str();
+//
+//    chart.boundary = load_polygon_from_file_raw(boundary_path);
+//
+//    // å¦‚æœè¿å¤–è¾¹ç•Œéƒ½æ‰¾ä¸åˆ°ï¼Œå°±æ²¡å¿…è¦ç»§ç»­äº†
+//    if (!chart.IsValid()) {
+//        std::cerr << "Error: Could not load boundary file: " << boundary_path << std::endl;
+//        return chart; // è¿”å›æ— æ•ˆçš„ chart
+//    }
+//
+//    // 2. å¾ªç¯åŠ è½½æ‰€æœ‰çš„æ´
+//    int hole_k = 0;
+//    while (true) {
+//        ss_filename.str(""); // æ¸…ç©º stringstream
+//        ss_filename.clear();
+//        // æ ¼å¼: exportdata/model_name_chart_index_hole_k.txt
+//        ss_filename << "exportdata/" << model_name << "_chart_" << chart_index << "_hole_" << hole_k << ".txt";
+//        std::string hole_path = ss_filename.str();
+//
+//        std::vector<glm::vec2> hole_vertices = load_polygon_from_file_raw(hole_path);
+//
+//        if (hole_vertices.empty()) {
+//            // æ‰¾ä¸åˆ°æ–‡ä»¶ï¼Œæ„å‘³ç€è¿™ä¸ªchartçš„æ´å·²ç»åŠ è½½å®Œæ¯•
+//            break;
+//        }
+//        else {
+//            chart.holes.push_back(hole_vertices);
+//            hole_k++;
+//        }
+//    }
+//
+//    // 3. å¯¹æ‰€æœ‰åŠ è½½çš„é¡¶ç‚¹ï¼ˆå¤–ç¯ + æ‰€æœ‰å†…æ´ï¼‰è¿›è¡Œç»Ÿä¸€å½’ä¸€åŒ–
+//
+//    glm::vec2 min_coords = chart.boundary[0];
+//    glm::vec2 max_coords = chart.boundary[0];
+//
+//    // ç”¨äºæ”¶é›†æ‰€æœ‰é¡¶ç‚¹çš„ lambda å‡½æ•°
+//    auto find_bounds = [&](const std::vector<glm::vec2>& vertices) {
+//        for (const auto& v : vertices) {
+//            min_coords.x = std::min(min_coords.x, v.x);
+//            min_coords.y = std::min(min_coords.y, v.y);
+//            max_coords.x = std::max(max_coords.x, v.x);
+//            max_coords.y = std::max(max_coords.y, v.y);
+//        }
+//        };
+//
+//    // æŸ¥æ‰¾å¤–ç¯çš„è¾¹ç•Œ
+//    find_bounds(chart.boundary);
+//    // æŸ¥æ‰¾æ‰€æœ‰å†…æ´çš„è¾¹ç•Œï¼ˆè¿™èƒ½ç¡®ä¿å†…æ´ä¹Ÿè¢«åŒ…å«åœ¨æ€»åŒ…å›´ç›’å†…ï¼‰
+//    for (const auto& hole_v : chart.holes) {
+//        find_bounds(hole_v);
+//    }
+//
+//    // è®¡ç®—å½’ä¸€åŒ–å‚æ•°
+//    glm::vec2 center = (min_coords + max_coords) * 0.5f;
+//    glm::vec2 size = max_coords - min_coords;
+//    float max_dim = std::max(size.x, size.y);
+//    float target_size = 10.0f; // ç›®æ ‡å°ºå¯¸ (ä¸ get_lake_shape_vertices ä¿æŒä¸€è‡´)
+//    float scale = (max_dim > 1e-6) ? (target_size / max_dim) : 1.0f;
+//
+//    // ç”¨äºåº”ç”¨å½’ä¸€åŒ–çš„ lambda
+//    auto normalize = [&](glm::vec2& v) {
+//        v = (v - center) * scale;
+//        };
+//
+//    // å¯¹å¤–ç¯åº”ç”¨å½’ä¸€åŒ–
+//    for (auto& v : chart.boundary) {
+//        normalize(v);
+//    }
+//    // ã€å…³é”®ã€‘å¯¹æ‰€æœ‰å†…æ´åº”ç”¨ *å®Œå…¨ç›¸åŒ* çš„å½’ä¸€åŒ–
+//    for (auto& hole_v : chart.holes) {
+//        for (auto& v : hole_v) {
+//            normalize(v);
+//        }
+//    }
+//
+//    std::cout << "Successfully loaded chart " << chart_index << " for model '" << model_name << "'." << std::endl;
+//    std::cout << "  - Boundary: 1 (with " << chart.boundary.size() << " vertices)" << std::endl;
+//    std::cout << "  - Holes: " << chart.holes.size() << std::endl;
+//
+//    return chart;
+//}
+
+
+// [ä¿®æ”¹] å¢åŠ  scale_override å‚æ•°ï¼Œé»˜è®¤å€¼ä¸º -1.0 (è¡¨ç¤ºè‡ªåŠ¨è®¡ç®—å±€éƒ¨ç¼©æ”¾)
+inline Chart2D load_chart_by_index(const std::string& model_name, int chart_index, float scale_override = -1.0f) {
 
     Chart2D chart;
     std::stringstream ss_filename;
 
-    // 1. ¼ÓÔØÍâ±ß½ç
-    // ¸ñÊ½: exportdata/model_name_chart_index_boundary.txt
+    // ... (åŠ è½½ boundary å’Œ holes çš„ä»£ç ä¿æŒä¸å˜) ...
+    // 1. åŠ è½½å¤–è¾¹ç•Œ
     ss_filename << "exportdata/" << model_name << "_chart_" << chart_index << "_boundary.txt";
     std::string boundary_path = ss_filename.str();
-
     chart.boundary = load_polygon_from_file_raw(boundary_path);
-
-    // Èç¹ûÁ¬Íâ±ß½ç¶¼ÕÒ²»µ½£¬¾ÍÃ»±ØÒª¼ÌĞøÁË
     if (!chart.IsValid()) {
         std::cerr << "Error: Could not load boundary file: " << boundary_path << std::endl;
-        return chart; // ·µ»ØÎŞĞ§µÄ chart
+        return chart;
     }
 
-    // 2. Ñ­»·¼ÓÔØËùÓĞµÄ¶´
+    // 2. å¾ªç¯åŠ è½½æ‰€æœ‰çš„æ´
     int hole_k = 0;
     while (true) {
-        ss_filename.str(""); // Çå¿Õ stringstream
-        ss_filename.clear();
-        // ¸ñÊ½: exportdata/model_name_chart_index_hole_k.txt
+        ss_filename.str(""); ss_filename.clear();
         ss_filename << "exportdata/" << model_name << "_chart_" << chart_index << "_hole_" << hole_k << ".txt";
-        std::string hole_path = ss_filename.str();
-
-        std::vector<glm::vec2> hole_vertices = load_polygon_from_file_raw(hole_path);
-
-        if (hole_vertices.empty()) {
-            // ÕÒ²»µ½ÎÄ¼ş£¬ÒâÎ¶×ÅÕâ¸öchartµÄ¶´ÒÑ¾­¼ÓÔØÍê±Ï
-            break;
-        }
-        else {
-            chart.holes.push_back(hole_vertices);
-            hole_k++;
-        }
+        std::vector<glm::vec2> hole_vertices = load_polygon_from_file_raw(ss_filename.str());
+        if (hole_vertices.empty()) break;
+        chart.holes.push_back(hole_vertices);
+        hole_k++;
     }
 
-    // 3. ¶ÔËùÓĞ¼ÓÔØµÄ¶¥µã£¨Íâ»· + ËùÓĞÄÚ¶´£©½øĞĞÍ³Ò»¹éÒ»»¯
-
+    // 3. å½’ä¸€åŒ–é€»è¾‘ [æ ¸å¿ƒä¿®æ”¹]
     glm::vec2 min_coords = chart.boundary[0];
     glm::vec2 max_coords = chart.boundary[0];
 
-    // ÓÃÓÚÊÕ¼¯ËùÓĞ¶¥µãµÄ lambda º¯Êı
     auto find_bounds = [&](const std::vector<glm::vec2>& vertices) {
         for (const auto& v : vertices) {
             min_coords.x = std::min(min_coords.x, v.x);
@@ -194,39 +272,32 @@ inline Chart2D load_chart_by_index(const std::string& model_name, int chart_inde
         }
         };
 
-    // ²éÕÒÍâ»·µÄ±ß½ç
     find_bounds(chart.boundary);
-    // ²éÕÒËùÓĞÄÚ¶´µÄ±ß½ç£¨ÕâÄÜÈ·±£ÄÚ¶´Ò²±»°üº¬ÔÚ×Ü°üÎ§ºĞÄÚ£©
-    for (const auto& hole_v : chart.holes) {
-        find_bounds(hole_v);
+    for (const auto& hole_v : chart.holes) find_bounds(hole_v);
+
+    glm::vec2 center = (min_coords + max_coords) * 0.5f;
+
+    float scale;
+    if (scale_override > 0.0f) {
+        // [æ–°å¢] å¦‚æœæä¾›äº†å…¨å±€ç¼©æ”¾æ¯”ä¾‹ï¼Œç›´æ¥ä½¿ç”¨å®ƒ
+        scale = scale_override;
+    }
+    else {
+        // [æ—§é€»è¾‘] å±€éƒ¨è‡ªåŠ¨ç¼©æ”¾
+        glm::vec2 size = max_coords - min_coords;
+        float max_dim = std::max(size.x, size.y);
+        float target_size = 10.0f;
+        scale = (max_dim > 1e-6) ? (target_size / max_dim) : 1.0f;
     }
 
-    // ¼ÆËã¹éÒ»»¯²ÎÊı
-    glm::vec2 center = (min_coords + max_coords) * 0.5f;
-    glm::vec2 size = max_coords - min_coords;
-    float max_dim = std::max(size.x, size.y);
-    float target_size = 10.0f; // Ä¿±ê³ß´ç (Óë get_lake_shape_vertices ±£³ÖÒ»ÖÂ)
-    float scale = (max_dim > 1e-6) ? (target_size / max_dim) : 1.0f;
-
-    // ÓÃÓÚÓ¦ÓÃ¹éÒ»»¯µÄ lambda
     auto normalize = [&](glm::vec2& v) {
-        v = (v - center) * scale;
+        v = (v - center) * scale; // æ³¨æ„ï¼šcenter ä»ç„¶æ˜¯å±€éƒ¨çš„ï¼Œä¿è¯æ¯ä¸ªå›¾è¡¨éƒ½å±…ä¸­æ˜¾ç¤º
         };
 
-    // ¶ÔÍâ»·Ó¦ÓÃ¹éÒ»»¯
-    for (auto& v : chart.boundary) {
-        normalize(v);
-    }
-    // ¡¾¹Ø¼ü¡¿¶ÔËùÓĞÄÚ¶´Ó¦ÓÃ *ÍêÈ«ÏàÍ¬* µÄ¹éÒ»»¯
+    for (auto& v : chart.boundary) normalize(v);
     for (auto& hole_v : chart.holes) {
-        for (auto& v : hole_v) {
-            normalize(v);
-        }
+        for (auto& v : hole_v) normalize(v);
     }
-
-    std::cout << "Successfully loaded chart " << chart_index << " for model '" << model_name << "'." << std::endl;
-    std::cout << "  - Boundary: 1 (with " << chart.boundary.size() << " vertices)" << std::endl;
-    std::cout << "  - Holes: " << chart.holes.size() << std::endl;
 
     return chart;
 }

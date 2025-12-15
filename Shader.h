@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -82,7 +82,7 @@ public:
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
     }
 
-    // --- ĞÂÔöº¯Êı£ºĞŞ¸´ C2039 ´íÎó ---
+    // --- æ–°å¢å‡½æ•°ï¼šä¿®å¤ C2039 é”™è¯¯ ---
     void setFloat(const std::string& name, float value) const
     {
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value);

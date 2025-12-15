@@ -1,36 +1,36 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <glm/glm.hpp>
 #include "Simulation2D.h"
 #include "Boundary.h"
 
-// --- ¹Ø¼üĞŞ¸´£º¶¨ÒåÕıÈ·µÄCGALÀàĞÍ ---
+// --- å…³é”®ä¿®å¤ï¼šå®šä¹‰æ­£ç¡®çš„CGALç±»å‹ ---
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Triangulation_face_base_with_info_2.h>
-#include <CGAL/Constrained_triangulation_face_base_2.h> // <-- ±ØĞë°üº¬Õâ¸öÍ·ÎÄ¼ş
+#include <CGAL/Constrained_triangulation_face_base_2.h> // <-- å¿…é¡»åŒ…å«è¿™ä¸ªå¤´æ–‡ä»¶
 
-// ÇøÓòÄÚ/Íâ±ê¼Ç
+// åŒºåŸŸå†…/å¤–æ ‡è®°
 struct FaceInfo2 {
     bool in_domain() const { return nesting_level % 2 == 1; }
     int nesting_level = 0;
 };
 
-// CGAL ÄÚºË
+// CGAL å†…æ ¸
 using K = CGAL::Exact_predicates_inexact_constructions_kernel;
 
-// ´´½¨Ò»¸ö¸´ºÏµÄÃæ»ùÀà£ºËü¼ÈÓĞÔ¼Êø±ßµÄĞÅÏ¢£¬Ò²ÓĞÎÒÃÇ×Ô¶¨ÒåµÄĞÅÏ¢
+// åˆ›å»ºä¸€ä¸ªå¤åˆçš„é¢åŸºç±»ï¼šå®ƒæ—¢æœ‰çº¦æŸè¾¹çš„ä¿¡æ¯ï¼Œä¹Ÿæœ‰æˆ‘ä»¬è‡ªå®šä¹‰çš„ä¿¡æ¯
 using Cfb = CGAL::Constrained_triangulation_face_base_2<K>;
 using Fbb = CGAL::Triangulation_face_base_with_info_2<FaceInfo2, K, Cfb>;
 
-// ¶¥µãºÍÊı¾İ½á¹¹
+// é¡¶ç‚¹å’Œæ•°æ®ç»“æ„
 using Vb = CGAL::Triangulation_vertex_base_2<K>;
 using Tds = CGAL::Triangulation_data_structure_2<Vb, Fbb>;
 
-// ×îÖÕµÄÔ¼ÊøµÂÀÍÄÚÈı½ÇÆÊ·ÖÀàĞÍ
+// æœ€ç»ˆçš„çº¦æŸå¾·åŠ³å†…ä¸‰è§’å‰–åˆ†ç±»å‹
 using CDT = CGAL::Constrained_Delaunay_triangulation_2<K, Tds>;
 using Point = CDT::Point;
-// --- ½áÊø ---
+// --- ç»“æŸ ---
 
 
 class CGALMeshGenerator {
@@ -38,7 +38,7 @@ public:
     struct Triangle {
         unsigned int v0, v1, v2;
     };
-    // Quad ½á¹¹Ìå¶¨ÒåÒÆµ½ Qmorph.h ÖĞ¸üºÏÊÊ£¬µ«ÎªÁË Viewer ÄÜ·ÃÎÊ£¬ÔİÊ±±£Áô
+    // Quad ç»“æ„ä½“å®šä¹‰ç§»åˆ° Qmorph.h ä¸­æ›´åˆé€‚ï¼Œä½†ä¸ºäº† Viewer èƒ½è®¿é—®ï¼Œæš‚æ—¶ä¿ç•™
     struct Quad {
         unsigned int v0, v1, v2, v3;
     };
@@ -46,7 +46,7 @@ public:
     CGALMeshGenerator() = default;
     ~CGALMeshGenerator() = default;
 
-    // º¯ÊıÇ©ÃûÏÖÔÚÊÇÕıÈ·µÄ
+    // å‡½æ•°ç­¾åç°åœ¨æ˜¯æ­£ç¡®çš„
     void generate_mesh(const std::vector<Simulation2D::Particle>& particles, const Boundary& boundary);
 
     const std::vector<glm::vec2>& get_vertices() const { return vertices_; }
@@ -56,6 +56,6 @@ public:
 private:
     std::vector<glm::vec2> vertices_;
     std::vector<Triangle> triangles_;
-    std::vector<Quad> quads_; // ĞÂÔö
+    std::vector<Quad> quads_; // æ–°å¢
 
 };

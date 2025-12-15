@@ -1,32 +1,32 @@
-#include "Viewer.h"
+ï»¿#include "Viewer.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 
-// --- ¹¹Ôìº¯Êı£º´ò¿ªÈÕÖ¾ÎÄ¼ş ---
+// --- æ„é€ å‡½æ•°ï¼šæ‰“å¼€æ—¥å¿—æ–‡ä»¶ ---
 Viewer::Viewer(int width, int height, const std::string& title)
     : width_(width), height_(height), title_(title), window_(nullptr) {
     init();
     convergence_log_.open("convergence_log.csv");
     if (convergence_log_.is_open()) {
-        convergence_log_ << "Step,KineticEnergy\n"; // Ğ´ÈëCSV±íÍ·
+        convergence_log_ << "Step,KineticEnergy\n"; // å†™å…¥CSVè¡¨å¤´
     }
 }
 
-// --- Îö¹¹º¯Êı£º¹Ø±ÕÈÕÖ¾ÎÄ¼ş ---
+// --- ææ„å‡½æ•°ï¼šå…³é—­æ—¥å¿—æ–‡ä»¶ ---
 Viewer::~Viewer() {
     delete shader_;
     delete point_shader_;
     delete size_field_shader_;
 
-    // [ĞŞ¸Ä] É¾³ı¾ÉµÄÇåÀí´úÂë
+    // [ä¿®æ”¹] åˆ é™¤æ—§çš„æ¸…ç†ä»£ç 
     // glDeleteVertexArrays(1, &VAO_boundary_); glDeleteBuffers(1, &VBO_boundary_);
 
-    // [ĞÂÔö] ±éÀúÁĞ±íÇåÀíËùÓĞ±ß½ç£¨Íâ»·+ÄÚ¶´£©µÄ×ÊÔ´
+    // [æ–°å¢] éå†åˆ—è¡¨æ¸…ç†æ‰€æœ‰è¾¹ç•Œï¼ˆå¤–ç¯+å†…æ´ï¼‰çš„èµ„æº
     for (const auto& item : boundary_render_items_) {
-        // ×¢Òâ£ºÕâÀï²ÎÊı 1 ±íÊ¾É¾³ıÒ»¸ö£¬µ«ÔÚÑ­»·ÖĞ»á¶ÔÃ¿¸ö item Ö´ĞĞ
-        // item.vao ºÍ item.vbo ÊÇ unsigned int£¬È¡µØÖ· & ´«µİ¸ø OpenGL
+        // æ³¨æ„ï¼šè¿™é‡Œå‚æ•° 1 è¡¨ç¤ºåˆ é™¤ä¸€ä¸ªï¼Œä½†åœ¨å¾ªç¯ä¸­ä¼šå¯¹æ¯ä¸ª item æ‰§è¡Œ
+        // item.vao å’Œ item.vbo æ˜¯ unsigned intï¼Œå–åœ°å€ & ä¼ é€’ç»™ OpenGL
         unsigned int vao = item.vao;
         unsigned int vbo = item.vbo;
         glDeleteVertexArrays(1, &vao);
@@ -36,7 +36,7 @@ Viewer::~Viewer() {
     glDeleteVertexArrays(1, &VAO_particles_); glDeleteBuffers(1, &VBO_particles_);
     glDeleteVertexArrays(1, &VAO_size_field_); glDeleteBuffers(1, &VBO_size_field_);
 
-    // (½¨Òé) ¼ÈÈ»ÄãÒ²ÓĞ VAO_mesh_ µÈ£¬×îºÃÒ²ÔÚÕâÀïÇåÀíÒ»ÏÂ£¬ËäÈ»²»ÊÇ±¾´Î´íÎóµÄÖØµã
+    // (å»ºè®®) æ—¢ç„¶ä½ ä¹Ÿæœ‰ VAO_mesh_ ç­‰ï¼Œæœ€å¥½ä¹Ÿåœ¨è¿™é‡Œæ¸…ç†ä¸€ä¸‹ï¼Œè™½ç„¶ä¸æ˜¯æœ¬æ¬¡é”™è¯¯çš„é‡ç‚¹
     if (VAO_mesh_ != 0) {
         glDeleteVertexArrays(1, &VAO_mesh_);
         glDeleteBuffers(1, &VBO_mesh_);
@@ -62,7 +62,7 @@ void Viewer::set_background_grid(BackgroundGrid* grid) {
 
 
 
-// --- Ö÷Ñ­»·£ºÌí¼ÓĞÂÂß¼­ ---
+// --- ä¸»å¾ªç¯ï¼šæ·»åŠ æ–°é€»è¾‘ ---
 //void Viewer::main_loop() {
 //    while (!glfwWindowShouldClose(window_)) {
 //        if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -97,12 +97,12 @@ void Viewer::set_background_grid(BackgroundGrid* grid) {
 //
 //                glBindVertexArray(VAO_mesh_);
 //
-//                // »æÖÆÊ£ÓàµÄÈı½ÇĞÎ
+//                // ç»˜åˆ¶å‰©ä½™çš„ä¸‰è§’å½¢
 //                if (!cgal_generator_->get_triangles().empty()) {
 //                    glDrawElements(GL_TRIANGLES, cgal_generator_->get_triangles().size() * 3, GL_UNSIGNED_INT, 0);
 //                }
 //
-//                // »æÖÆËÄ±ßĞÎ (ĞèÒª¸üĞÂ EBO)
+//                // ç»˜åˆ¶å››è¾¹å½¢ (éœ€è¦æ›´æ–° EBO)
 //                if (!cgal_generator_->get_quads().empty()) {
 //                    std::vector<unsigned int> quad_line_indices;
 //                    for (const auto& q : cgal_generator_->get_quads()) {
@@ -120,7 +120,7 @@ void Viewer::set_background_grid(BackgroundGrid* grid) {
 //        }
 //        
 //        else if (show_size_field_) {
-//            // --- »æÖÆ´óĞ¡³¡ ---
+//            // --- ç»˜åˆ¶å¤§å°åœº ---
 //            if (grid_ && size_field_shader_) {
 //                size_field_shader_->use();
 //                size_field_shader_->setMat4("view", view);
@@ -135,7 +135,7 @@ void Viewer::set_background_grid(BackgroundGrid* grid) {
 //                glBindVertexArray(VAO_size_field_);
 //                glDrawArrays(GL_TRIANGLES, 0, grid_->get_width() * grid_->get_height() * 6);
 //            }
-//            // --- ÔÚ´óĞ¡³¡Ö®ÉÏµş¼Ó±ß½çÏß ---
+//            // --- åœ¨å¤§å°åœºä¹‹ä¸Šå åŠ è¾¹ç•Œçº¿ ---
 //            if (boundary_ && shader_) {
 //                shader_->use();
 //                shader_->setMat4("view", view);
@@ -147,7 +147,7 @@ void Viewer::set_background_grid(BackgroundGrid* grid) {
 //        }
 //        
 //        else {
-//            // »æÖÆ±ß½ç
+//            // ç»˜åˆ¶è¾¹ç•Œ
 //            if (boundary_ && shader_) {
 //                shader_->use();
 //                shader_->setMat4("model", model);
@@ -158,7 +158,7 @@ void Viewer::set_background_grid(BackgroundGrid* grid) {
 //                glDrawArrays(GL_LINE_LOOP, 0, boundary_->get_vertices().size());
 //                glLineWidth(1.0f);
 //            }
-//            // »æÖÆÁ£×Ó
+//            // ç»˜åˆ¶ç²’å­
 //            if (sim2d_ && point_shader_) {
 //                point_shader_->use();
 //                shader_->setMat4("model", model);
@@ -206,7 +206,7 @@ void Viewer::main_loop() {
                 shader_->setMat4("model", model); shader_->setMat4("view", view); shader_->setMat4("projection", projection);
                 shader_->setVec4("color", glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
                 glLineWidth(1.0f);
-                // [ĞŞ¸Ä] ±éÀúËùÓĞ±ß½çÏî½øĞĞ»æÖÆ
+                // [ä¿®æ”¹] éå†æ‰€æœ‰è¾¹ç•Œé¡¹è¿›è¡Œç»˜åˆ¶
                 for (const auto& item : boundary_render_items_) {
                     glBindVertexArray(item.vao);
                     glDrawArrays(GL_LINE_LOOP, 0, item.vertex_count);
@@ -243,7 +243,7 @@ void Viewer::main_loop() {
                 shader_->setMat4("model", model); shader_->setMat4("view", view); shader_->setMat4("projection", projection);
                 shader_->setVec4("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
                 glLineWidth(2.5f);
-                // [ĞŞ¸Ä] ±éÀúËùÓĞ±ß½çÏî½øĞĞ»æÖÆ
+                // [ä¿®æ”¹] éå†æ‰€æœ‰è¾¹ç•Œé¡¹è¿›è¡Œç»˜åˆ¶
                 for (const auto& item : boundary_render_items_) {
                     glBindVertexArray(item.vao);
                     glDrawArrays(GL_LINE_LOOP, 0, item.vertex_count);
@@ -292,7 +292,7 @@ void Viewer::main_loop() {
 
 
 
-// --- ĞÂÔöº¯Êı ---
+// --- æ–°å¢å‡½æ•° ---
 
 void Viewer::update_mesh_buffers() {
     if (!cgal_generator_ || cgal_generator_->get_vertices().empty()) return;
@@ -304,7 +304,7 @@ void Viewer::update_mesh_buffers() {
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_mesh_);
 
-    // ¹Ø¼ü£ºÖ»¸ù¾İµ±Ç°Ó¦¸ÃÏÔÊ¾µÄÄÚÈİÀ´×¼±¸EBO
+    // å…³é”®ï¼šåªæ ¹æ®å½“å‰åº”è¯¥æ˜¾ç¤ºçš„å†…å®¹æ¥å‡†å¤‡EBO
     if (current_view_ == ViewMode::Triangles) {
         const auto& tris = cgal_generator_->get_triangles();
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, tris.size() * sizeof(CGALMeshGenerator::Triangle), tris.data(), GL_STATIC_DRAW);
@@ -385,7 +385,7 @@ void Viewer::setup_size_field_buffers() {
 
     for (int y = 0; y < h - 1; ++y) {
         for (int x = 0; x < w - 1; ++x) {
-            // Ã¿¸ö¸ñ×Ó´´½¨Á½¸öÈı½ÇĞÎ
+            // æ¯ä¸ªæ ¼å­åˆ›å»ºä¸¤ä¸ªä¸‰è§’å½¢
             Vertex v0 = { min_c + glm::vec2(x * cs, y * cs),       field[y * w + x] };
             Vertex v1 = { min_c + glm::vec2((x + 1) * cs, y * cs),   field[y * w + x + 1] };
             Vertex v2 = { min_c + glm::vec2(x * cs, (y + 1) * cs),   field[(y + 1) * w + x] };
@@ -408,16 +408,16 @@ void Viewer::setup_size_field_buffers() {
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 }
-// --- ĞÂÔö£º¾²Ì¬¼üÅÌ»Øµ÷º¯Êı ---
+// --- æ–°å¢ï¼šé™æ€é”®ç›˜å›è°ƒå‡½æ•° ---
 
 void Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     auto* viewer = static_cast<Viewer*>(glfwGetWindowUserPointer(window));
     if (!viewer || action != GLFW_PRESS) return;
 
     if (key == GLFW_KEY_V) {
-        // ÔÚËÄÖÖÄ£Ê½¼äÑ­»·ÇĞ»»
+        // åœ¨å››ç§æ¨¡å¼é—´å¾ªç¯åˆ‡æ¢
         viewer->current_view_ = static_cast<ViewMode>((static_cast<int>(viewer->current_view_) + 1) % 4);
-        // --- ¹Ø¼üĞŞ¸´£ºÇĞ»»µ½ÈÎºÎÍø¸ñÊÓÍ¼ºó£¬¶¼±ØĞë¸üĞÂ»º³åÇø ---
+        // --- å…³é”®ä¿®å¤ï¼šåˆ‡æ¢åˆ°ä»»ä½•ç½‘æ ¼è§†å›¾åï¼Œéƒ½å¿…é¡»æ›´æ–°ç¼“å†²åŒº ---
         if (viewer->current_view_ == ViewMode::Triangles || viewer->current_view_ == ViewMode::Quads) {
             viewer->update_mesh_buffers();
         }
@@ -431,28 +431,28 @@ void Viewer::key_callback(GLFWwindow* window, int key, int scancode, int action,
     if (key == GLFW_KEY_C) {
         if (!viewer->cgal_generator_ || !viewer->sim2d_ || !viewer->boundary_) return;
 
-        // Èç¹ûµ±Ç°ÊÇÈı½ÇÍø¸ñÄ£Ê½£¬Ôò×ª»»ÎªËÄ±ßĞÎ
+        // å¦‚æœå½“å‰æ˜¯ä¸‰è§’ç½‘æ ¼æ¨¡å¼ï¼Œåˆ™è½¬æ¢ä¸ºå››è¾¹å½¢
         if (viewer->current_view_ == ViewMode::Triangles) {
             if (viewer->qmorph_converter_) {
                 auto result = viewer->qmorph_converter_->run(*viewer->cgal_generator_);
                 viewer->quads_ = result.quads;
                 viewer->remaining_triangles_ = result.remaining_triangles;
                 viewer->current_view_ = ViewMode::Quads;
-                viewer->update_mesh_buffers(); // ÔÚ¸Ä±ä×´Ì¬ºó¸üĞÂ
+                viewer->update_mesh_buffers(); // åœ¨æ”¹å˜çŠ¶æ€åæ›´æ–°
 
-                // --> ×Ô¶¯µ¼³ö
+                // --> è‡ªåŠ¨å¯¼å‡º
                 viewer->export_current_mesh();
             }
         }
-        // ·ñÔò£¬´ÓÁ£×Ó/´óĞ¡³¡Éú³É³õÊ¼Èı½ÇÍø¸ñ
+        // å¦åˆ™ï¼Œä»ç²’å­/å¤§å°åœºç”Ÿæˆåˆå§‹ä¸‰è§’ç½‘æ ¼
         else {
             viewer->cgal_generator_->generate_mesh(viewer->sim2d_->get_particles(), *viewer->boundary_);
             viewer->quads_.clear();
             viewer->remaining_triangles_.clear();
             viewer->current_view_ = ViewMode::Triangles;
-            viewer->update_mesh_buffers(); // ÔÚ¸Ä±ä×´Ì¬ºó¸üĞÂ
+            viewer->update_mesh_buffers(); // åœ¨æ”¹å˜çŠ¶æ€åæ›´æ–°
 
-            // --> ×Ô¶¯µ¼³ö
+            // --> è‡ªåŠ¨å¯¼å‡º
             viewer->export_current_mesh();
         }
     }
@@ -497,19 +497,19 @@ void Viewer::set_qmorph_generator(Qmorph* converter) {
 }
 
 
-// --- ìo‘B»ØÕ{º¯”µ ---
+// --- éœæ…‹å›èª¿å‡½æ•¸ ---
 
 void Viewer::setup_boundary_buffers() {
     if (!boundary_) return;
 
-    // 1. ÇåÀí¾ÉÊı¾İ
+    // 1. æ¸…ç†æ—§æ•°æ®
     for (auto& item : boundary_render_items_) {
         glDeleteVertexArrays(1, &item.vao);
         glDeleteBuffers(1, &item.vbo);
     }
     boundary_render_items_.clear();
 
-    // 2. ×¼±¸Ò»¸ö lambda º¯ÊıÀ´´¦Àíµ¥¸ö¶à±ßĞÎµÄÉÏ´«
+    // 2. å‡†å¤‡ä¸€ä¸ª lambda å‡½æ•°æ¥å¤„ç†å•ä¸ªå¤šè¾¹å½¢çš„ä¸Šä¼ 
     auto add_polygon_to_buffer = [&](const std::vector<glm::vec2>& vertices) {
         if (vertices.empty()) return;
         BoundaryRenderItem item;
@@ -525,15 +525,15 @@ void Viewer::setup_boundary_buffers() {
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
         glEnableVertexAttribArray(0);
 
-        glBindVertexArray(0); // ½â°ó
+        glBindVertexArray(0); // è§£ç»‘
 
         boundary_render_items_.push_back(item);
         };
 
-    // 3. ÉÏ´«Íâ»·
+    // 3. ä¸Šä¼ å¤–ç¯
     add_polygon_to_buffer(boundary_->get_outer_boundary());
 
-    // 4. ÉÏ´«ËùÓĞÄÚ¶´ [ºËĞÄĞŞ¸Ä]
+    // 4. ä¸Šä¼ æ‰€æœ‰å†…æ´ [æ ¸å¿ƒä¿®æ”¹]
     for (const auto& hole : boundary_->get_holes()) {
         add_polygon_to_buffer(hole);
     }
@@ -554,10 +554,10 @@ void Viewer::init() {
     window_ = glfwCreateWindow(width_, height_, title_.c_str(), nullptr, nullptr);
     glfwMakeContextCurrent(window_);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { return; }
-    glfwSetWindowUserPointer(window_, this); // ¹Ø¼ü£º½«thisÖ¸ÕëÓë´°¿Ú¹ØÁª
+    glfwSetWindowUserPointer(window_, this); // å…³é”®ï¼šå°†thisæŒ‡é’ˆä¸çª—å£å…³è”
 
     glfwSetWindowUserPointer(window_, this);
-    glfwSetKeyCallback(window_, key_callback); // <-- ×¢²á¼üÅÌ»Øµ÷
+    glfwSetKeyCallback(window_, key_callback); // <-- æ³¨å†Œé”®ç›˜å›è°ƒ
     glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
     glfwSetMouseButtonCallback(window_, mouse_button_callback);
     glfwSetCursorPosCallback(window_, cursor_pos_callback);
@@ -622,11 +622,11 @@ void Viewer::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     }
 }
 
-// [ĞÂÔö] µ¼³öÍø¸ñµÄºËĞÄº¯Êı
+// [æ–°å¢] å¯¼å‡ºç½‘æ ¼çš„æ ¸å¿ƒå‡½æ•°
 void Viewer::export_current_mesh() {
     if (!cgal_generator_) return;
 
-    // 1. È·±£µ¼³öÄ¿Â¼´æÔÚ
+    // 1. ç¡®ä¿å¯¼å‡ºç›®å½•å­˜åœ¨
     std::string dir = "exportmesh";
     if (!std::filesystem::exists(dir)) {
         try {
@@ -638,7 +638,7 @@ void Viewer::export_current_mesh() {
         }
     }
 
-    // 2. È·¶¨ÎÄ¼şÃûºÍÊı¾İÔ´
+    // 2. ç¡®å®šæ–‡ä»¶åå’Œæ•°æ®æº
     std::string suffix;
     bool is_quad_mode = false;
 
@@ -650,7 +650,7 @@ void Viewer::export_current_mesh() {
         is_quad_mode = true;
     }
     else {
-        return; // ²»ÔÚÍø¸ñÄ£Ê½ÏÂ£¬²»µ¼³ö
+        return; // ä¸åœ¨ç½‘æ ¼æ¨¡å¼ä¸‹ï¼Œä¸å¯¼å‡º
     }
 
     std::string filepath = dir + "/" + output_base_name_ + suffix;
@@ -662,29 +662,29 @@ void Viewer::export_current_mesh() {
 
     std::cout << "[Export] Writing mesh to: " << filepath << " ..." << std::endl;
 
-    // 3. Ğ´Èë¶¥µã (OBJ ¸ñÊ½: v x y z)
-    // ×¢Òâ£ºÄ¿Ç°ÎÒÃÇÊ¹ÓÃ CGAL Éú³ÉµÄ¶¥µã¡£Èç¹û QMorph Æ½»¬¸üĞÂÁË¶¥µã£¬
-    // ÕâÀïµ¼³öµÄ»¹ÊÇÔ­Ê¼Î»ÖÃ£¬³ı·ÇÎÒÃÇ¸üĞÂÁË cgal_generator_ µÄÊı¾İ¡£
-    // ÕâÊÇÒ»¸ö¼òµ¥µÄµ¼³öÊµÏÖ¡£
+    // 3. å†™å…¥é¡¶ç‚¹ (OBJ æ ¼å¼: v x y z)
+    // æ³¨æ„ï¼šç›®å‰æˆ‘ä»¬ä½¿ç”¨ CGAL ç”Ÿæˆçš„é¡¶ç‚¹ã€‚å¦‚æœ QMorph å¹³æ»‘æ›´æ–°äº†é¡¶ç‚¹ï¼Œ
+    // è¿™é‡Œå¯¼å‡ºçš„è¿˜æ˜¯åŸå§‹ä½ç½®ï¼Œé™¤éæˆ‘ä»¬æ›´æ–°äº† cgal_generator_ çš„æ•°æ®ã€‚
+    // è¿™æ˜¯ä¸€ä¸ªç®€å•çš„å¯¼å‡ºå®ç°ã€‚
     const auto& vertices = cgal_generator_->get_vertices();
     for (const auto& v : vertices) {
         out << "v " << v.x << " " << v.y << " 0.0\n";
     }
 
-    // 4. Ğ´ÈëÃæ (OBJ ¸ñÊ½: f v1 v2 v3 ...)
-    // ×¢Òâ: OBJ Ë÷ÒıÊÇ´Ó 1 ¿ªÊ¼µÄ
+    // 4. å†™å…¥é¢ (OBJ æ ¼å¼: f v1 v2 v3 ...)
+    // æ³¨æ„: OBJ ç´¢å¼•æ˜¯ä» 1 å¼€å§‹çš„
     if (is_quad_mode) {
-        // µ¼³öËÄ±ßĞÎ
+        // å¯¼å‡ºå››è¾¹å½¢
         for (const auto& q : quads_) {
             out << "f " << (q.v0 + 1) << " " << (q.v1 + 1) << " " << (q.v2 + 1) << " " << (q.v3 + 1) << "\n";
         }
-        // µ¼³öÊ£ÓàµÄÈı½ÇĞÎ (»ìºÏÍø¸ñ)
+        // å¯¼å‡ºå‰©ä½™çš„ä¸‰è§’å½¢ (æ··åˆç½‘æ ¼)
         for (const auto& t : remaining_triangles_) {
             out << "f " << (t.v0 + 1) << " " << (t.v1 + 1) << " " << (t.v2 + 1) << "\n";
         }
     }
     else {
-        // µ¼³ö´¿Èı½ÇÍø¸ñ
+        // å¯¼å‡ºçº¯ä¸‰è§’ç½‘æ ¼
         const auto& tris = cgal_generator_->get_triangles();
         for (const auto& t : tris) {
             out << "f " << (t.v0 + 1) << " " << (t.v1 + 1) << " " << (t.v2 + 1) << "\n";

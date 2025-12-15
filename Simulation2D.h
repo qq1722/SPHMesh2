@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <glm/glm.hpp>
 #include "BackgroundGrid.h"
@@ -15,21 +15,21 @@ public:
         glm::vec2 force = glm::vec2(0.0f);
         float smoothing_h = 0.0f;
         float target_density = 0.0f;
-        glm::mat2 rotation = glm::mat2(1.0f); // ĞÂÔö£º¾Ö²¿×ø±êÏµµÄĞı×ª¾ØÕó
+        glm::mat2 rotation = glm::mat2(1.0f); // æ–°å¢ï¼šå±€éƒ¨åæ ‡ç³»çš„æ—‹è½¬çŸ©é˜µ
 		bool is_boundary = false;
 
     };
 
-    // [ĞŞ¸Ä] ¹¹Ôìº¯Êı½ÓÊÕĞÂ²ÎÊı
-    Simulation2D(const Boundary& boundary, float refinement_level);
+    // [ä¿®æ”¹] æ„é€ å‡½æ•°å¢åŠ  base_particle_spacing å‚æ•°
+    Simulation2D(const Boundary& boundary, float refinement_level, float base_particle_spacing);
     void step();
     const std::vector<glm::vec2>& get_particle_positions() const;
     const std::vector<Particle>& get_particles() const { return particles_; }
-    // ĞÂÔö£º¼ÆËãÏµÍ³×Ü¶¯ÄÜ£¬ÓÃÓÚÊÕÁ²ÅĞ¶Ï
+    // æ–°å¢ï¼šè®¡ç®—ç³»ç»Ÿæ€»åŠ¨èƒ½ï¼Œç”¨äºæ”¶æ•›åˆ¤æ–­
     float get_kinetic_energy() const;
-    // ĞÂÔö£ºÌá¹©¶Ô±³¾°Íø¸ñµÄ·ÃÎÊ
+    // æ–°å¢ï¼šæä¾›å¯¹èƒŒæ™¯ç½‘æ ¼çš„è®¿é—®
     BackgroundGrid* get_background_grid() const { return grid_.get(); }
-    float get_min_target_size() const { return h_min_; } // <-- ĞÂÔö
+    float get_min_target_size() const { return h_min_; } // <-- æ–°å¢
 
 private:
     void initialize_particles(const Boundary& boundary);
@@ -37,17 +37,17 @@ private:
     void update_positions();
     void handle_boundaries(const Boundary& boundary);
 
-    // [ĞÂÔö] ¶ÔÓ¦ÂÛÎÄ Algorithm 1: ±ß½ç×ÔÊÊÓ¦Á£×Ó·Ö²¼
+    // [æ–°å¢] å¯¹åº”è®ºæ–‡ Algorithm 1: è¾¹ç•Œè‡ªé€‚åº”ç²’å­åˆ†å¸ƒ
     void initialize_boundary_particles(const std::vector<glm::vec2>& loop);
 
-    // [ĞÂÔö] ¶ÔÓ¦ÂÛÎÄ Algorithm 2: ÓòÄÚ×ÔÊÊÓ¦Á£×Ó·Ö²¼
+    // [æ–°å¢] å¯¹åº”è®ºæ–‡ Algorithm 2: åŸŸå†…è‡ªé€‚åº”ç²’å­åˆ†å¸ƒ
    // void initialize_indomain_particles(const Boundary& boundary);
 
-    // --- [ĞÂÔö] ËÄ²æÊ÷µİ¹éÉú³ÉºËĞÄº¯Êı ---
-    // min_pt, max_pt: µ±Ç°Õı·½ĞÎ¸ñ×ÓµÄ·¶Î§
+    // --- [æ–°å¢] å››å‰æ ‘é€’å½’ç”Ÿæˆæ ¸å¿ƒå‡½æ•° ---
+    // min_pt, max_pt: å½“å‰æ­£æ–¹å½¢æ ¼å­çš„èŒƒå›´
     void recursive_spawn_particles(glm::vec2 min_pt, glm::vec2 max_pt, const Boundary& boundary);
 
-    // ¸¨Öúº¯Êı
+    // è¾…åŠ©å‡½æ•°
     glm::vec2 transform_to_local(const glm::vec2& vec, const glm::mat2& rot_matrix) const;
     float l_inf_norm(const glm::vec2& v) const;
     float wendland_c6_kernel(float q, float h);
@@ -59,11 +59,11 @@ private:
     std::unique_ptr<BackgroundGrid> grid_;
     int num_particles_ = 0;
 
-    // SPH Ä£Äâ²ÎÊı
+    // SPH æ¨¡æ‹Ÿå‚æ•°
     float time_step_ = 0.005f;
     float mass_ = 1.0f;
-    float stiffness_ = 0.01f;//releaceÄ£Ê½1.0fºÃÓÃ
+    float stiffness_ = 0.01f;//releaceæ¨¡å¼1.0få¥½ç”¨
     float damping_ = 0.998f;
-    float h_max_;             // ×î´óÄ¿±ê³ß´ç
-    float h_min_;             // <-- ĞÂÔö£º²¹ÉÏÕâ¸öÈ±Ê§µÄÉùÃ÷
+    float h_max_;             // æœ€å¤§ç›®æ ‡å°ºå¯¸
+    float h_min_;             // <-- æ–°å¢ï¼šè¡¥ä¸Šè¿™ä¸ªç¼ºå¤±çš„å£°æ˜
 };

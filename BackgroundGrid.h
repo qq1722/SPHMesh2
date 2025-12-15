@@ -1,25 +1,25 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <glm/glm.hpp>
 #include "Boundary.h"
 
 class BackgroundGrid {
 public:
-    // [ĞŞ¸Ä] ¹¹Ôìº¯ÊıÔö¼ÓÒ»¸ö²ÎÊı
-   // [ĞŞ¸Ä] ¹¹Ôìº¯ÊıÇ©Ãû
+    // [ä¿®æ”¹] æ„é€ å‡½æ•°å¢åŠ ä¸€ä¸ªå‚æ•°
+   // [ä¿®æ”¹] æ„é€ å‡½æ•°ç­¾å
     BackgroundGrid(const Boundary& boundary, float grid_cell_size, float refinement_level, float h_min, float h_max);
 
     float get_target_size(const glm::vec2& pos) const;
-    // ĞÂÔö£º»ñÈ¡Ö¸¶¨Î»ÖÃµÄÄ¿±ê·½Ïò D_t
+    // æ–°å¢ï¼šè·å–æŒ‡å®šä½ç½®çš„ç›®æ ‡æ–¹å‘ D_t
     glm::vec2 get_target_direction(const glm::vec2& pos) const;
-    // --- ĞÂÔö¹«¹²½Ó¿Ú ---
+    // --- æ–°å¢å…¬å…±æ¥å£ ---
     int get_width() const { return width_; }
     int get_height() const { return height_; }
     float get_cell_size() const { return cell_size_; }
     glm::vec2 get_min_coords() const { return min_coords_; }
     const std::vector<float>& get_target_size_field() const { return target_size_field_; }
-    // --- ½áÊø ---
-    float get_min_target_size() const { return h_min_; } // <-- ĞÂÔö
+    // --- ç»“æŸ ---
+    float get_min_target_size() const { return h_min_; } // <-- æ–°å¢
 
 private:
     void compute_fields(const Boundary& boundary);
@@ -27,12 +27,12 @@ private:
     glm::vec2 min_coords_;
     float cell_size_;
     int width_, height_;
-    std::vector<float> target_size_field_;     // ´æ´¢ h_t
-    std::vector<glm::vec2> target_direction_field_; // ĞÂÔö£º´æ´¢ D_t
-    // [ĞÂÔö] ´æ´¢ h_min ºÍ h_max
+    std::vector<float> target_size_field_;     // å­˜å‚¨ h_t
+    std::vector<glm::vec2> target_direction_field_; // æ–°å¢ï¼šå­˜å‚¨ D_t
+    // [æ–°å¢] å­˜å‚¨ h_min å’Œ h_max
     float h_min_ = 0.1f;
     float h_max_ = 0.4f;
 
-    // [ĞÂÔö] ´æ´¢ÓÃ»§×Ô¶¨ÒåµÄ¼ÓÃÜ²ãÊı
-    float refinement_level_ = 5.0f; // Ä¬ÈÏÖµ
+    // [æ–°å¢] å­˜å‚¨ç”¨æˆ·è‡ªå®šä¹‰çš„åŠ å¯†å±‚æ•°
+    float refinement_level_ = 5.0f; // é»˜è®¤å€¼
 };

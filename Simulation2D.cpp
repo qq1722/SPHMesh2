@@ -1,4 +1,4 @@
-#include "Simulation2D.h"
+ï»¿#include "Simulation2D.h"
 #include "Boundary.h"
 #include "Utils.h"
 #include <random>
@@ -7,28 +7,31 @@
 
 constexpr float PI = 3.1415926535f;
 
-// --- ¸¨Öúº¯Êı£º½«ÏòÁ¿×ª»»µ½¾Ö²¿×ø±êÏµ ---
+// --- è¾…åŠ©å‡½æ•°ï¼šå°†å‘é‡è½¬æ¢åˆ°å±€éƒ¨åæ ‡ç³» ---
 glm::vec2 Simulation2D::transform_to_local(const glm::vec2& vec, const glm::mat2& rot_matrix) const {
-    // Ğı×ª¾ØÕóµÄÄæÊÇËüµÄ×ªÖÃ
+    // æ—‹è½¬çŸ©é˜µçš„é€†æ˜¯å®ƒçš„è½¬ç½®
     return glm::transpose(rot_matrix) * vec;
 }
 
 
 
-Simulation2D::Simulation2D(const Boundary& boundary, float refinement_level) : boundary_(boundary) {
-    const auto& aabb = boundary.get_aabb();
-    float domain_width = aabb.z - aabb.x;
-    // ±³¾°Íø¸ñµÄ·Ö±æÂÊ¾ö¶¨ÁË h_t ³¡µÄ¾«¶È£¬µ«²»Ö±½Ó¾ö¶¨Á£×ÓÊıÁ¿
-    float grid_cell_size = domain_width / 150.0f;
-    // [ĞŞ¸Ä] 1. ÏÈÔÚÕâÀï¶¨Òå h_min ºÍ h_max
-     // (Äã¿ÉÒÔ±£Áô»òĞŞ¸ÄÕâÀïµÄ curvature Âß¼­)
+// [ä¿®æ”¹] æ„é€ å‡½æ•°å®ç°
+Simulation2D::Simulation2D(const Boundary& boundary, float refinement_level, float base_particle_spacing)
+    : boundary_(boundary)
+{
+    // [æ ¸å¿ƒä¿®æ”¹] ä¸å†æ ¹æ®å½“å‰è¾¹ç•Œå¤§å°åŠ¨æ€è®¡ç®—ï¼Œè€Œæ˜¯ç›´æ¥ä½¿ç”¨ä¼ å…¥çš„å›ºå®šé—´è·
+    // ä»¥å‰æ˜¯: float grid_cell_size = domain_width / 150.0f;
+
+    float grid_cell_size = base_particle_spacing;
+
+    // h_min å’Œ h_max åŸºäºè¿™ä¸ªå›ºå®šçš„ç½‘æ ¼å°ºå¯¸
     h_min_ = grid_cell_size * 0.5f;
     h_max_ = grid_cell_size * 2.0f;
 
-    // [ĞŞ¸Ä] 2. ½«ËùÓĞ²ÎÊı´«µİ¸ø BackgroundGrid
+    // åˆå§‹åŒ–èƒŒæ™¯ç½‘æ ¼
     grid_ = std::make_unique<BackgroundGrid>(boundary, grid_cell_size, refinement_level, h_min_, h_max_);
 
-    // ³õÊ¼»¯Á£×Ó (ÏÖÔÚµ÷ÓÃµÄÊÇĞÂµÄËÄ²æÊ÷°æ±¾)
+    // åˆå§‹åŒ–ç²’å­
     initialize_particles(boundary);
 }
 
@@ -41,11 +44,11 @@ void Simulation2D::compute_forces() {
             glm::vec2 diff_global = particles_[i].position - particles_[j].position;
             float h_avg = (particles_[i].smoothing_h + particles_[j].smoothing_h) * 0.5f;
 
-            // ×ª»»µ½Á£×Ó i µÄ¾Ö²¿×ø±êÏµ
+            // è½¬æ¢åˆ°ç²’å­ i çš„å±€éƒ¨åæ ‡ç³»
             glm::vec2 diff_local_i = transform_to_local(diff_global, particles_[i].rotation);
             float r_inf = l_inf_norm(diff_local_i);
 
-            if (r_inf < 2.0f * h_avg) { // 2.0 ÊÇ½ôÖ§¼¯°ë¾¶
+            if (r_inf < 2.0f * h_avg) { // 2.0 æ˜¯ç´§æ”¯é›†åŠå¾„
                 float q = r_inf / h_avg;
                 if (q > 1e-6) {
                     float rho_t_i = particles_[i].target_density;
@@ -54,37 +57,37 @@ void Simulation2D::compute_forces() {
                     float W_grad_mag = wendland_c6_kernel_derivative(q, h_avg);
 
                     // ============================================================
-                    // [ºËĞÄĞŞ¸´] Ê¹ÓÃ L-infinity µÄÕæÊµÌİ¶È·½Ïò
+                    // [æ ¸å¿ƒä¿®å¤] ä½¿ç”¨ L-infinity çš„çœŸå®æ¢¯åº¦æ–¹å‘
                     // ============================================================
                     glm::vec2 grad_direction(0.0f);
                     float abs_x = std::abs(diff_local_i.x);
                     float abs_y = std::abs(diff_local_i.y);
 
-                    // Èİ²î£¬´¦Àí¶Ô½ÇÏßÇé¿ö (´ËÊ± x ºÍ y ²î²»¶à´ó)
-                    // Èç¹ûÔÚ¸ÃÈİ²îÄÚ£¬¿ÉÒÔ·ÖÅä¸øÁ½¸ö·½Ïò£¬»òÕßÆ½»¬¹ı¶É
+                    // å®¹å·®ï¼Œå¤„ç†å¯¹è§’çº¿æƒ…å†µ (æ­¤æ—¶ x å’Œ y å·®ä¸å¤šå¤§)
+                    // å¦‚æœåœ¨è¯¥å®¹å·®å†…ï¼Œå¯ä»¥åˆ†é…ç»™ä¸¤ä¸ªæ–¹å‘ï¼Œæˆ–è€…å¹³æ»‘è¿‡æ¸¡
                     float epsilon = 1e-5f;
 
                     if (abs_x > abs_y + epsilon) {
-                        // X ÖáÖ÷µ¼£ºÁ¦Ö»ÔÚ X ·½Ïò
+                        // X è½´ä¸»å¯¼ï¼šåŠ›åªåœ¨ X æ–¹å‘
                         grad_direction = glm::vec2((diff_local_i.x > 0) ? 1.0f : -1.0f, 0.0f);
                     }
                     else if (abs_y > abs_x + epsilon) {
-                        // Y ÖáÖ÷µ¼£ºÁ¦Ö»ÔÚ Y ·½Ïò
+                        // Y è½´ä¸»å¯¼ï¼šåŠ›åªåœ¨ Y æ–¹å‘
                         grad_direction = glm::vec2(0.0f, (diff_local_i.y > 0) ? 1.0f : -1.0f);
                     }
                     else {
-                        // ¶Ô½ÇÏßÇé¿ö£ºÁ½¸ö·½Ïò¶¼ÓĞ (±ÜÃâ³ıÒÔÁã»òÍ»±ä)
-                        // ÕâÖÖÇé¿öÏÂ L_inf µÄÌİ¶ÈÊÇ¶àÖµµÄ£¬ÎÒÃÇÈ¡¹éÒ»»¯ÏòÁ¿×÷Îª½üËÆ
+                        // å¯¹è§’çº¿æƒ…å†µï¼šä¸¤ä¸ªæ–¹å‘éƒ½æœ‰ (é¿å…é™¤ä»¥é›¶æˆ–çªå˜)
+                        // è¿™ç§æƒ…å†µä¸‹ L_inf çš„æ¢¯åº¦æ˜¯å¤šå€¼çš„ï¼Œæˆ‘ä»¬å–å½’ä¸€åŒ–å‘é‡ä½œä¸ºè¿‘ä¼¼
                         grad_direction = glm::normalize(diff_local_i);
                     }
 
-                    // [Ô­À´µÄ´íÎó´úÂë] µ¼ÖÂÁË²»ÎÈ¶¨ĞÔ
+                    // [åŸæ¥çš„é”™è¯¯ä»£ç ] å¯¼è‡´äº†ä¸ç¨³å®šæ€§
                     // glm::vec2 normalized_diff_local = diff_local_i / r_inf; 
 
-                    // ¼ÆËã¾Ö²¿Á¦ (×¢Òâ£ºÁ¦ÑØ×Å grad_direction)
+                    // è®¡ç®—å±€éƒ¨åŠ› (æ³¨æ„ï¼šåŠ›æ²¿ç€ grad_direction)
                     glm::vec2 force_local = -mass_ * mass_ * P_term * W_grad_mag * grad_direction;
 
-                    // ×ª»»»ØÈ«¾Ö×ø±êÏµ
+                    // è½¬æ¢å›å…¨å±€åæ ‡ç³»
                     glm::vec2 force_global = particles_[i].rotation * force_local;
 
                     particles_[i].force += force_global;
@@ -96,56 +99,56 @@ void Simulation2D::compute_forces() {
 }
 
 
-// --- ºËĞÄĞŞ¸Ä£ºÔÚÎ»ÖÃ¸üĞÂºó£¬¸üĞÂÁ£×ÓµÄ·½Ïò ---
+// --- æ ¸å¿ƒä¿®æ”¹ï¼šåœ¨ä½ç½®æ›´æ–°åï¼Œæ›´æ–°ç²’å­çš„æ–¹å‘ ---
 void Simulation2D::update_positions() {
     for (auto& p : particles_) {
         p.velocity += (p.force / mass_) * time_step_;
         p.velocity *= damping_;
         p.position += p.velocity * time_step_;
 
-        // ´Ó±³¾°Íø¸ñ¸üĞÂÃ¿¸öÁ£×ÓµÄÄ¿±ê²ÎÊı
+        // ä»èƒŒæ™¯ç½‘æ ¼æ›´æ–°æ¯ä¸ªç²’å­çš„ç›®æ ‡å‚æ•°
         p.smoothing_h = grid_->get_target_size(p.position);
         p.target_density = 1.0f / (p.smoothing_h * p.smoothing_h);
 
-        // ¹Ø¼ü£º¸üĞÂÁ£×ÓµÄĞı×ª¾ØÕóÒÔ¶ÔÆë·½Ïò³¡
+        // å…³é”®ï¼šæ›´æ–°ç²’å­çš„æ—‹è½¬çŸ©é˜µä»¥å¯¹é½æ–¹å‘åœº
         glm::vec2 target_dir = grid_->get_target_direction(p.position);
-        glm::vec2 current_dir = p.rotation[0]; // ¾Ö²¿XÖá
+        glm::vec2 current_dir = p.rotation[0]; // å±€éƒ¨Xè½´
 
-        // Ê¹ÓÃÉÙÁ¿²åÖµÆ½»¬µØ×ªÏòÄ¿±ê·½Ïò£¬·ÀÖ¹¶¶¶¯
+        // ä½¿ç”¨å°‘é‡æ’å€¼å¹³æ»‘åœ°è½¬å‘ç›®æ ‡æ–¹å‘ï¼Œé˜²æ­¢æŠ–åŠ¨
         glm::vec2 new_dir = glm::normalize(current_dir + (target_dir - current_dir) * 0.1f);
 
         p.rotation[0] = new_dir;
-        p.rotation[1] = glm::vec2(-new_dir.y, new_dir.x); // ±£³ÖÕı½»
+        p.rotation[1] = glm::vec2(-new_dir.y, new_dir.x); // ä¿æŒæ­£äº¤
     }
 }
 
 
 
 
-// ... (compute_forces, update_positions, step, get_particle_positions ±£³Ö²»±ä) ...
+// ... (compute_forces, update_positions, step, get_particle_positions ä¿æŒä¸å˜) ...
 
 
-// [ĞŞ¸Ä] ³õÊ¼»¯Èë¿Ú
+// [ä¿®æ”¹] åˆå§‹åŒ–å…¥å£
 void Simulation2D::initialize_particles(const Boundary& boundary) {
     particles_.clear();
     std::cout << "Initializing particles: Hybrid Method (Paper Boundary + Cartesian Interior)..." << std::endl;
 
-    // --- A. Éú³É±ß½çÁ£×Ó (ÂÛÎÄËã·¨) ---
+    // --- A. ç”Ÿæˆè¾¹ç•Œç²’å­ (è®ºæ–‡ç®—æ³•) ---
     initialize_boundary_particles(boundary.get_outer_boundary());
     for (const auto& hole : boundary.get_holes()) {
         initialize_boundary_particles(hole);
     }
     std::cout << "  Boundary particles generated." << std::endl;
 
-    // --- B. Éú³ÉÓòÄÚÁ£×Ó (ÄãµÄµÑ¿¨¶ûËã·¨) ---
-    // ¹¹½¨¸²¸ÇÈ«ÓòµÄ¸ùÕı·½ĞÎ
+    // --- B. ç”ŸæˆåŸŸå†…ç²’å­ (ä½ çš„ç¬›å¡å°”ç®—æ³•) ---
+    // æ„å»ºè¦†ç›–å…¨åŸŸçš„æ ¹æ­£æ–¹å½¢
     const glm::vec4& aabb = boundary.get_aabb();
     float width = aabb.z - aabb.x;
     float height = aabb.w - aabb.y;
     float max_dim = std::max(width, height);
     glm::vec2 center_aabb = { (aabb.x + aabb.z) * 0.5f, (aabb.y + aabb.w) * 0.5f };
 
-    float root_size = max_dim * 1.2f; // ÉÔÎ¢À©´óÒÔ¸²¸Ç±ß½ç
+    float root_size = max_dim * 1.2f; // ç¨å¾®æ‰©å¤§ä»¥è¦†ç›–è¾¹ç•Œ
     glm::vec2 root_min = center_aabb - glm::vec2(root_size * 0.5f);
     glm::vec2 root_max = center_aabb + glm::vec2(root_size * 0.5f);
 
@@ -157,7 +160,7 @@ void Simulation2D::initialize_particles(const Boundary& boundary) {
     std::cout << "Total particles: " << num_particles_ << std::endl;
 }
 
-float Simulation2D::wendland_c6_kernel(float q, float h) {
+float Simulation2D::     wendland_c6_kernel(float q, float h) {
     if (q >= 0.0f && q < 2.0f) {
         float term = 1.0f - q / 2.0f;
         float term_sq = term * term;
@@ -191,27 +194,27 @@ float Simulation2D::l_inf_norm(const glm::vec2& v) const {
 
 void Simulation2D::handle_boundaries(const Boundary& boundary) {
     for (auto& p : particles_) {
-        // Èç¹ûÁ£×Ó³ö½ç£¨ÎŞÂÛÊÇÔÚ×îÍâ²ãÍâÃæ£¬»¹ÊÇÔÚÄÚ¶´ÀïÃæ£©
+        // å¦‚æœç²’å­å‡ºç•Œï¼ˆæ— è®ºæ˜¯åœ¨æœ€å¤–å±‚å¤–é¢ï¼Œè¿˜æ˜¯åœ¨å†…æ´é‡Œé¢ï¼‰
         if (!boundary.is_inside(p.position)) {
 
             glm::vec2 closest_pt;
             glm::vec2 tangent;
 
-            // 1. »ñÈ¡×î½üµÄ±ß½çµãºÍ¶ÔÓ¦µÄÇĞÏß·½Ïò
+            // 1. è·å–æœ€è¿‘çš„è¾¹ç•Œç‚¹å’Œå¯¹åº”çš„åˆ‡çº¿æ–¹å‘
             boundary.get_closest_point_and_tangent(p.position, closest_pt, tangent);
 
-            // 2. ¡¾Î»ÖÃĞŞÕı¡¿£ºÇ¿ĞĞ½«Á£×Ó¡°Îü¸½¡±µ½±ß½çÏßÉÏ
+            // 2. ã€ä½ç½®ä¿®æ­£ã€‘ï¼šå¼ºè¡Œå°†ç²’å­â€œå¸é™„â€åˆ°è¾¹ç•Œçº¿ä¸Š
             p.position = closest_pt;
 
-            // 3. ¡¾ËÙ¶ÈĞŞÕı¡¿£ºÊµÏÖ»¬¶¯ (Sliding)
-            // ½«ËÙ¶ÈÍ¶Ó°µ½ÇĞÏß·½Ïò¡£
-            // ÊıÑ§Ô­Àí£ºv_new = (v_old ¡¤ tangent) * tangent
-            // ÕâÑù¾ÍÈ¥µôÁË´¹Ö±ÓÚ±ß½çµÄ·ÖÁ¿£¬Ö»±£ÁôÑØ±ß½çÅÜµÄ·ÖÁ¿¡£
+            // 3. ã€é€Ÿåº¦ä¿®æ­£ã€‘ï¼šå®ç°æ»‘åŠ¨ (Sliding)
+            // å°†é€Ÿåº¦æŠ•å½±åˆ°åˆ‡çº¿æ–¹å‘ã€‚
+            // æ•°å­¦åŸç†ï¼šv_new = (v_old Â· tangent) * tangent
+            // è¿™æ ·å°±å»æ‰äº†å‚ç›´äºè¾¹ç•Œçš„åˆ†é‡ï¼Œåªä¿ç•™æ²¿è¾¹ç•Œè·‘çš„åˆ†é‡ã€‚
             float v_dot_t = glm::dot(p.velocity, tangent);
             p.velocity = v_dot_t * tangent;
 
-            // (¿ÉÑ¡) Èç¹ûÄãÏ£ÍûÁ£×ÓÔÚ±ß½çÉÏÒÆ¶¯Ê±ÓĞÒ»Ğ©¡°Ä¦²ÁÁ¦¡±¶øÂıÂıÍ£ÏÂ
-            // ¿ÉÒÔ³ËÒ»¸ö×èÄáÏµÊı£¬±ÈÈç 0.9f¡£Èç¹û²»³Ë£¬¾ÍÊÇ¹â»¬»¬¶¯¡£
+            // (å¯é€‰) å¦‚æœä½ å¸Œæœ›ç²’å­åœ¨è¾¹ç•Œä¸Šç§»åŠ¨æ—¶æœ‰ä¸€äº›â€œæ‘©æ“¦åŠ›â€è€Œæ…¢æ…¢åœä¸‹
+            // å¯ä»¥ä¹˜ä¸€ä¸ªé˜»å°¼ç³»æ•°ï¼Œæ¯”å¦‚ 0.9fã€‚å¦‚æœä¸ä¹˜ï¼Œå°±æ˜¯å…‰æ»‘æ»‘åŠ¨ã€‚
             // p.velocity *= 0.95f; 
         }
     }
@@ -231,7 +234,7 @@ const std::vector<glm::vec2>& Simulation2D::get_particle_positions() const {
     return positions_for_render_;
 }
 
-// ĞÂÔöº¯ÊıÊµÏÖ
+// æ–°å¢å‡½æ•°å®ç°
 float Simulation2D::get_kinetic_energy() const {
     float total_energy = 0.0f;
     for (const auto& p : particles_) {
@@ -242,37 +245,37 @@ float Simulation2D::get_kinetic_energy() const {
 
 
 // ==========================================
-// 2. [ÄãµÄËã·¨] ÓòÄÚµÑ¿¨¶ûÁ£×ÓÉú³É (ËÄ²æÊ÷µİ¹é)
+// 2. [ä½ çš„ç®—æ³•] åŸŸå†…ç¬›å¡å°”ç²’å­ç”Ÿæˆ (å››å‰æ ‘é€’å½’)
 // ==========================================
 void Simulation2D::recursive_spawn_particles(glm::vec2 min_pt, glm::vec2 max_pt, const Boundary& boundary) {
     glm::vec2 center = (min_pt + max_pt) * 0.5f;
     float current_cell_size = max_pt.x - min_pt.x;
     float h_target = grid_->get_target_size(center);
 
-    // ·ÀÖ¹ÎŞÏŞµİ¹éµÄ×îĞ¡³ß´ç
+    // é˜²æ­¢æ— é™é€’å½’çš„æœ€å°å°ºå¯¸
     float min_allowed_h = grid_->get_cell_size() * 0.2f;
 
-    // Èç¹ûµ±Ç°¸ñ×Ó±ÈÄ¿±ê³ß´ç´ó£¬¼ÌĞø·ÖÁÑ£¨µÑ¿¨¶û¼ÓÃÜ£©
+    // å¦‚æœå½“å‰æ ¼å­æ¯”ç›®æ ‡å°ºå¯¸å¤§ï¼Œç»§ç»­åˆ†è£‚ï¼ˆç¬›å¡å°”åŠ å¯†ï¼‰
     if (current_cell_size > std::max(h_target, min_allowed_h)) {
-        recursive_spawn_particles(min_pt, center, boundary); // ×óÏÂ
-        recursive_spawn_particles({ center.x, min_pt.y }, { max_pt.x, center.y }, boundary); // ÓÒÏÂ
-        recursive_spawn_particles({ min_pt.x, center.y }, { center.x, max_pt.y }, boundary); // ×óÉÏ
-        recursive_spawn_particles(center, max_pt, boundary); // ÓÒÉÏ
+        recursive_spawn_particles(min_pt, center, boundary); // å·¦ä¸‹
+        recursive_spawn_particles({ center.x, min_pt.y }, { max_pt.x, center.y }, boundary); // å³ä¸‹
+        recursive_spawn_particles({ min_pt.x, center.y }, { center.x, max_pt.y }, boundary); // å·¦ä¸Š
+        recursive_spawn_particles(center, max_pt, boundary); // å³ä¸Š
     }
     else {
-        // Ò¶×Ó½Úµã£ºÉú³ÉÁ£×Ó
-        // ¡¾¹Ø¼ü¼ì²é¡¿Ö»ÓĞÔÚ±ß½çÄÚ²¿²ÅÉú³ÉÁ÷ÌåÁ£×Ó
-        // ²¢ÇÒ×îºÃÀë±ß½çÓĞÒ»µãµã¾àÀë£¬·ÀÖ¹ºÍ±ß½çÁ£×ÓÖØµşÌ«À÷º¦
+        // å¶å­èŠ‚ç‚¹ï¼šç”Ÿæˆç²’å­
+        // ã€å…³é”®æ£€æŸ¥ã€‘åªæœ‰åœ¨è¾¹ç•Œå†…éƒ¨æ‰ç”Ÿæˆæµä½“ç²’å­
+        // å¹¶ä¸”æœ€å¥½ç¦»è¾¹ç•Œæœ‰ä¸€ç‚¹ç‚¹è·ç¦»ï¼Œé˜²æ­¢å’Œè¾¹ç•Œç²’å­é‡å å¤ªå‰å®³
         if (boundary.is_inside(center)) {
             Particle p;
-            p.position = center; // ÍêÃÀµÄµÑ¿¨¶ûÖĞĞÄµã
+            p.position = center; // å®Œç¾çš„ç¬›å¡å°”ä¸­å¿ƒç‚¹
             p.velocity = glm::vec2(0.0f);
             p.force = glm::vec2(0.0f);
             p.smoothing_h = h_target;
             p.target_density = 1.0f / (h_target * h_target);
-            p.is_boundary = false; // ¡¾¹Ø¼ü¡¿±ê¼ÇÎªÓòÄÚÁ÷ÌåÁ£×Ó
+            p.is_boundary = false; // ã€å…³é”®ã€‘æ ‡è®°ä¸ºåŸŸå†…æµä½“ç²’å­
 
-            // ³õÊ¼Ğı×ª¾ØÕó¶ÔÆë×ø±êÖá
+            // åˆå§‹æ—‹è½¬çŸ©é˜µå¯¹é½åæ ‡è½´
             p.rotation = glm::mat2(1.0f);
 
             particles_.push_back(p);
@@ -281,23 +284,23 @@ void Simulation2D::recursive_spawn_particles(glm::vec2 min_pt, glm::vec2 max_pt,
 }
 
 // ==========================================
-// 1. [ÂÛÎÄËã·¨] ±ß½çÁ£×ÓÉú³É (Algorithm 1)
+// 1. [è®ºæ–‡ç®—æ³•] è¾¹ç•Œç²’å­ç”Ÿæˆ (Algorithm 1)
 // ==========================================
 void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& loop) {
     if (loop.size() < 2) return;
 
-    float Q = 0.0f; // ÀÛ¼ÓÆ÷
+    float Q = 0.0f; // ç´¯åŠ å™¨
 
     for (size_t i = 0; i < loop.size(); ++i) {
         glm::vec2 p0 = loop[i];
         glm::vec2 p1 = loop[(i + 1) % loop.size()];
 
-        // »ñÈ¡¶ËµãÄ¿±ê³ß´ç
+        // è·å–ç«¯ç‚¹ç›®æ ‡å°ºå¯¸
         float h0 = grid_->get_target_size(p0);
         float h1 = grid_->get_target_size(p1);
         float h_bar = 0.5f * (h0 + h1);
 
-        // ¼ÆËã±ß³¤ºÍÖÊÁ¿¶ÈÁ¿
+        // è®¡ç®—è¾¹é•¿å’Œè´¨é‡åº¦é‡
         float L = glm::distance(p0, p1);
         float m = L / h_bar;
         Q += m;
@@ -307,7 +310,7 @@ void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& l
         if (n > 0) {
             glm::vec2 dir = p1 - p0;
             for (int k = 0; k < n; ++k) {
-                // ¾ùÔÈ²åÖµ
+                // å‡åŒ€æ’å€¼
                 float t = (float)k / (float)n;
                 glm::vec2 pos = p0 + t * dir;
 
@@ -316,8 +319,8 @@ void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& l
                 p.position = pos;
                 p.smoothing_h = h_t;
                 p.target_density = 1.0f / (h_t * h_t);
-                p.is_boundary = true; // ¡¾¹Ø¼ü¡¿±ê¼ÇÎª±ß½çÁ£×Ó
-                p.velocity = glm::vec2(0.0f); // ±ß½çÁ£×Ó²»¶¯
+                p.is_boundary = true; // ã€å…³é”®ã€‘æ ‡è®°ä¸ºè¾¹ç•Œç²’å­
+                p.velocity = glm::vec2(0.0f); // è¾¹ç•Œç²’å­ä¸åŠ¨
 
                 particles_.push_back(p);
             }
@@ -327,7 +330,7 @@ void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& l
 }
 
 // ==========================================
-// [ĞÂÔö] ÂÛÎÄ Algorithm 2: ÓòÄÚÁ£×ÓÉú³É
+// [æ–°å¢] è®ºæ–‡ Algorithm 2: åŸŸå†…ç²’å­ç”Ÿæˆ
 // ==========================================
 //void Simulation2D::initialize_indomain_particles(const Boundary& boundary) {
 //    int nx = grid_->get_width();
@@ -335,26 +338,26 @@ void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& l
 //    float cell_size = grid_->get_cell_size();
 //    glm::vec2 min_coord = grid_->get_min_coords();
 //
-//    float Q = 0.0f; // ÖÊÁ¿ÀÛ¼ÓÆ÷ 
-//    float A_cell = cell_size * cell_size; // µ¥ÔªÃæ»ı 
+//    float Q = 0.0f; // è´¨é‡ç´¯åŠ å™¨ 
+//    float A_cell = cell_size * cell_size; // å•å…ƒé¢ç§¯ 
 //
 //    std::mt19937 rng(std::random_device{}());
 //    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
 //
-//    // ±éÀú±³¾°Íø¸ñµ¥Ôª
+//    // éå†èƒŒæ™¯ç½‘æ ¼å•å…ƒ
 //    for (int y = 0; y < ny - 1; ++y) {
 //        for (int x = 0; x < nx - 1; ++x) {
-//            // ¼ÆËãµ±Ç°µ¥ÔªµÄÖĞĞÄ
+//            // è®¡ç®—å½“å‰å•å…ƒçš„ä¸­å¿ƒ
 //            glm::vec2 cell_center = min_coord + glm::vec2((x + 0.5f) * cell_size, (y + 0.5f) * cell_size);
 //
-//            // 1. ¼ì²éµ¥ÔªÊÇ·ñÔÚÓòÄÚ (¼ò»¯´¦Àí£º¼ì²éÖĞĞÄµã) 
-//            // ÂÛÎÄÖĞÊ¹ÓÃ flag£¬ÕâÀïÎÒÃÇÀûÓÃ Boundary::is_inside
+//            // 1. æ£€æŸ¥å•å…ƒæ˜¯å¦åœ¨åŸŸå†… (ç®€åŒ–å¤„ç†ï¼šæ£€æŸ¥ä¸­å¿ƒç‚¹) 
+//            // è®ºæ–‡ä¸­ä½¿ç”¨ flagï¼Œè¿™é‡Œæˆ‘ä»¬åˆ©ç”¨ Boundary::is_inside
 //            if (!boundary.is_inside(cell_center)) {
 //                continue;
 //            }
 //
-//            // 2. ¼ÆËãµ¥ÔªËÄ¸ö½ÇµãµÄÆ½¾ùÃÜ¶È 
-//            // get_target_size ·µ»Ø h£¬ÃÜ¶È rho = 1/h^2
+//            // 2. è®¡ç®—å•å…ƒå››ä¸ªè§’ç‚¹çš„å¹³å‡å¯†åº¦ 
+//            // get_target_size è¿”å› hï¼Œå¯†åº¦ rho = 1/h^2
 //            float h00 = grid_->get_target_size(min_coord + glm::vec2(x * cell_size, y * cell_size));
 //            float h10 = grid_->get_target_size(min_coord + glm::vec2((x + 1) * cell_size, y * cell_size));
 //            float h01 = grid_->get_target_size(min_coord + glm::vec2(x * cell_size, (y + 1) * cell_size));
@@ -367,21 +370,21 @@ void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& l
 //
 //            float rho_avg = 0.25f * (rho00 + rho10 + rho01 + rho11);
 //
-//            // 3. ¼ÆËãµ¥ÔªÖÊÁ¿ m_cell = rho_avg * A_cell [cite: 181]
+//            // 3. è®¡ç®—å•å…ƒè´¨é‡ m_cell = rho_avg * A_cell [cite: 181]
 //            float m_cell = rho_avg * A_cell;
 //
-//            // 4. ÀÛ¼Ó²¢ÅĞ¶ÏÉú³ÉÊıÁ¿ 
+//            // 4. ç´¯åŠ å¹¶åˆ¤æ–­ç”Ÿæˆæ•°é‡ 
 //            Q += m_cell;
 //            int n = static_cast<int>(std::floor(Q));
 //
 //            if (n > 0) {
-//                // 5. ÔÚµ¥ÔªÄÚ¾ùÔÈ²ÉÑùÉú³É n ¸öÁ£×Ó 
+//                // 5. åœ¨å•å…ƒå†…å‡åŒ€é‡‡æ ·ç”Ÿæˆ n ä¸ªç²’å­ 
 //                for (int k = 0; k < n; ++k) {
 //                    float u = dist(rng);
 //                    float v = dist(rng);
 //                    glm::vec2 pos = min_coord + glm::vec2((x + u) * cell_size, (y + v) * cell_size);
 //
-//                    // ÔÙ´Î¼ì²é¾ßÌåÁ£×ÓÎ»ÖÃÊÇ·ñÔÚ±ß½çÄÚ£¨´¦Àí±ß½ç¸½½üµÄÍø¸ñ£©
+//                    // å†æ¬¡æ£€æŸ¥å…·ä½“ç²’å­ä½ç½®æ˜¯å¦åœ¨è¾¹ç•Œå†…ï¼ˆå¤„ç†è¾¹ç•Œé™„è¿‘çš„ç½‘æ ¼ï¼‰
 //                    if (boundary.is_inside(pos)) {
 //                        float h_t = grid_->get_target_size(pos);
 //
@@ -391,7 +394,7 @@ void Simulation2D::initialize_boundary_particles(const std::vector<glm::vec2>& l
 //                        p.force = glm::vec2(0.0f);
 //                        p.smoothing_h = h_t;
 //                        p.target_density = 1.0f / (h_t * h_t);
-//                        p.is_boundary = false; // ÓòÄÚÁ£×Ó
+//                        p.is_boundary = false; // åŸŸå†…ç²’å­
 //
 //                        particles_.push_back(p);
 //                    }

@@ -1,9 +1,9 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <glm/glm.hpp>
 #include <algorithm>
 
-// ½«¸¨Öúº¯ÊıÉèÎª inline£¬ÒÔ±ÜÃâ¶àÖØ¶¨ÒåÁ´½Ó´íÎó
+// å°†è¾…åŠ©å‡½æ•°è®¾ä¸º inlineï¼Œä»¥é¿å…å¤šé‡å®šä¹‰é“¾æ¥é”™è¯¯
 inline glm::vec2 closest_point_on_segment(const glm::vec2& p, const glm::vec2& a, const glm::vec2& b) {
     glm::vec2 ab = b - a;
     glm::vec2 ap = p - a;
@@ -20,7 +20,7 @@ inline glm::vec2 closest_point_on_polygon(const glm::vec2& p, const std::vector<
     if (vertices.empty()) return p;
     glm::vec2 closest_point = vertices[0];
     float min_dist_sq = FLT_MAX;
-    // ¹Ø¼ü´íÎóĞŞ¸´£ºÊ¹ÓÃ j = i++ ¶ø²»ÊÇ i = j++
+    // å…³é”®é”™è¯¯ä¿®å¤ï¼šä½¿ç”¨ j = i++ è€Œä¸æ˜¯ i = j++
     for (size_t i = 0, j = vertices.size() - 1; i < vertices.size(); j = i++) {
         glm::vec2 closest_pt_on_edge = closest_point_on_segment(p, vertices[j], vertices[i]);
         float dist_sq = glm::dot(p - closest_pt_on_edge, p - closest_pt_on_edge);

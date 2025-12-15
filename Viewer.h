@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 #include <glm/glm.hpp>
@@ -9,9 +9,7 @@
 #include "Shader.h"
 #include "Boundary.h"
 #include "Simulation2D.h"
-#include "MeshGenerator2D.h"
 #include "BackgroundGrid.h" 
-//#include "DelaunayMeshGenerator.h" 
 #include "CGALMeshGenerator.h"
 #include "qmorph.h"
 
@@ -27,18 +25,18 @@ public:
     void set_simulation2d(Simulation2D* sim);
    // void set_mesh_generator2d(MeshGenerator2D* generator);
     void run();
-    void set_background_grid(BackgroundGrid* grid); // ĞÂÔö
-    void set_cgal_generator(CGALMeshGenerator* generator); // ĞÂÔö
+    void set_background_grid(BackgroundGrid* grid); // æ–°å¢
+    void set_cgal_generator(CGALMeshGenerator* generator); // æ–°å¢
     void set_qmorph_generator(Qmorph* converter);
 
-    // [ĞÂÔö] ÉèÖÃµ¼³öÎÄ¼şµÄ»ù´¡Ãû³Æ (ÀıÈç "teddy_chart_0")
+    // [æ–°å¢] è®¾ç½®å¯¼å‡ºæ–‡ä»¶çš„åŸºç¡€åç§° (ä¾‹å¦‚ "teddy_chart_0")
     void set_output_base_name(const std::string& base_name) { output_base_name_ = base_name; }
 
 private:
     void init();
     void main_loop();
     //void process_input();
-    // ĞÂÔö£º¼üÅÌ»Øµ÷º¯Êı
+    // æ–°å¢ï¼šé”®ç›˜å›è°ƒå‡½æ•°
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     void update_camera_vectors();
 
@@ -51,13 +49,13 @@ private:
     static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
     static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
-    // ĞÂÔö£º¿ÉÊÓ»¯Ä£Ê½ÇĞ»»ºÍÊı¾İµ¼³ö
+    // æ–°å¢ï¼šå¯è§†åŒ–æ¨¡å¼åˆ‡æ¢å’Œæ•°æ®å¯¼å‡º
     void toggle_view_mode();
     void save_particle_snapshot();
-    // ĞÂÔö£ºÎª´óĞ¡³¡ÉèÖÃ»º³åÇø
+    // æ–°å¢ï¼šä¸ºå¤§å°åœºè®¾ç½®ç¼“å†²åŒº
     void setup_size_field_buffers();
 
-    // [ĞÂÔö] µ¼³öµ±Ç°ÏÔÊ¾µÄÍø¸ñ
+    // [æ–°å¢] å¯¼å‡ºå½“å‰æ˜¾ç¤ºçš„ç½‘æ ¼
     void export_current_mesh();
 
 private:
@@ -71,32 +69,32 @@ private:
     Shader* size_field_shader_ = nullptr;
     unsigned int VAO_size_field_ = 0, VBO_size_field_ = 0;
     BackgroundGrid* grid_ = nullptr;
-    // ¿ØÖÆÂß¼­
+    // æ§åˆ¶é€»è¾‘
    // bool show_size_field_ = false;
     int step_count_ = 0;
     std::ofstream convergence_log_;
 
     CGALMeshGenerator* cgal_generator_ = nullptr;
     unsigned int VAO_mesh_ = 0, VBO_mesh_ = 0, EBO_mesh_ = 0;
-  //  bool show_mesh_ = false; // ĞÂÔö£º¿ØÖÆÍø¸ñÏÔÊ¾
+  //  bool show_mesh_ = false; // æ–°å¢ï¼šæ§åˆ¶ç½‘æ ¼æ˜¾ç¤º
 
-    Qmorph* qmorph_converter_ = nullptr; // ĞÂÔö
-    // ĞÂÔö£º´æ´¢Q-Morph×ª»»½á¹û
-    //std::vector<glm::vec2> smoothed_vertices_; // *** ĞÂÔö£º´æ´¢Æ½»¬ºóµÄ¶¥µã ***
+    Qmorph* qmorph_converter_ = nullptr; // æ–°å¢
+    // æ–°å¢ï¼šå­˜å‚¨Q-Morphè½¬æ¢ç»“æœ
+    //std::vector<glm::vec2> smoothed_vertices_; // *** æ–°å¢ï¼šå­˜å‚¨å¹³æ»‘åçš„é¡¶ç‚¹ ***
     std::vector<CGALMeshGenerator::Quad> quads_;
     std::vector<CGALMeshGenerator::Triangle> remaining_triangles_;
 
 
     //unsigned int VAO_boundary_ = 0, VBO_boundary_ = 0;
     unsigned int VAO_particles_ = 0, VBO_particles_ = 0;
-    // [ĞŞ¸Ä] Ìæ»»Ô­ÓĞµÄ VAO_boundary_ / VBO_boundary_
-     // ÎÒÃÇ¶¨ÒåÒ»¸ö¼òµ¥µÄ½á¹¹ÌåÀ´¹ÜÀíÃ¿Ò»Ìõ±ß½çÏß£¨Íâ»·»òÄÚ¶´£©
+    // [ä¿®æ”¹] æ›¿æ¢åŸæœ‰çš„ VAO_boundary_ / VBO_boundary_
+     // æˆ‘ä»¬å®šä¹‰ä¸€ä¸ªç®€å•çš„ç»“æ„ä½“æ¥ç®¡ç†æ¯ä¸€æ¡è¾¹ç•Œçº¿ï¼ˆå¤–ç¯æˆ–å†…æ´ï¼‰
     struct BoundaryRenderItem {
         unsigned int vao;
         unsigned int vbo;
         int vertex_count;
     };
-    std::vector<BoundaryRenderItem> boundary_render_items_; // ´æ´¢ËùÓĞ±ß½çµÄäÖÈ¾ĞÅÏ¢
+    std::vector<BoundaryRenderItem> boundary_render_items_; // å­˜å‚¨æ‰€æœ‰è¾¹ç•Œçš„æ¸²æŸ“ä¿¡æ¯
 
     Boundary* boundary_ = nullptr;
     Simulation2D* sim2d_ = nullptr;
@@ -114,10 +112,10 @@ private:
 
     float h_ = 0.10f;
 
-    enum class ViewMode { Particles, SizeField, Triangles, Quads }; // <-- Ôö¼Ó Quads Ä£Ê½
+    enum class ViewMode { Particles, SizeField, Triangles, Quads }; // <-- å¢åŠ  Quads æ¨¡å¼
     ViewMode current_view_ = ViewMode::Particles;
 
-    // [ĞÂÔö]
+    // [æ–°å¢]
     std::string output_base_name_ = "output";
     
 };

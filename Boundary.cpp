@@ -1,22 +1,22 @@
-#include "Boundary.h"
+ï»¿#include "Boundary.h"
 #include "Utils.h"
 #include <algorithm> // for std::min/max
 #include <cfloat>
 
-// ¹¹Ôìº¯Êı: Ä Chart2D ³õÊ¼»¯
+// æ„é€ å‡½æ•°: å¾ Chart2D åˆå§‹åŒ–
 Boundary::Boundary(const Chart2D& chart)
-    : m_outer_boundary(chart.boundary), m_holes(chart.holes) // <-- [ĞŞ¸Ä]
+    : m_outer_boundary(chart.boundary), m_holes(chart.holes) // <-- [ä¿®æ”¹]
 {
     calculate_aabb();
 }
 
-// get_outer_boundary() µÄÊµÏÖ
+// get_outer_boundary() çš„å®ç°
 const std::vector<glm::vec2>& Boundary::get_outer_boundary() const
 {
     return m_outer_boundary;
 }
 
-// [ĞÂÔö] get_holes() µÄÊµÏÖ
+// [æ–°å¢] get_holes() çš„å®ç°
 const std::vector<std::vector<glm::vec2>>& Boundary::get_holes() const
 {
     return m_holes;
@@ -29,16 +29,16 @@ const glm::vec4& Boundary::get_aabb() const
 
 void Boundary::calculate_aabb()
 {
-    // AABB ƒHÓÉ *Íâ* ß…½ç›Q¶¨
-    if (m_outer_boundary.empty()) { // <-- [ĞŞ¸Ä]
+    // AABB åƒ…ç”± *å¤–* é‚Šç•Œæ±ºå®š
+    if (m_outer_boundary.empty()) { // <-- [ä¿®æ”¹]
         aabb_ = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
         return;
     }
 
-    glm::vec2 min_coords = m_outer_boundary[0]; // <-- [ĞŞ¸Ä]
-    glm::vec2 max_coords = m_outer_boundary[0]; // <-- [ĞŞ¸Ä]
+    glm::vec2 min_coords = m_outer_boundary[0]; // <-- [ä¿®æ”¹]
+    glm::vec2 max_coords = m_outer_boundary[0]; // <-- [ä¿®æ”¹]
 
-    for (size_t i = 1; i < m_outer_boundary.size(); ++i) // <-- [ĞŞ¸Ä]
+    for (size_t i = 1; i < m_outer_boundary.size(); ++i) // <-- [ä¿®æ”¹]
     {
         min_coords.x = std::min(min_coords.x, m_outer_boundary[i].x);
         min_coords.y = std::min(min_coords.y, m_outer_boundary[i].y);
@@ -48,8 +48,8 @@ void Boundary::calculate_aabb()
     aabb_ = glm::vec4(min_coords.x, min_coords.y, max_coords.x, max_coords.y);
 }
 
-// [ĞÂÔö] ìo‘BİoÖúº¯”µ: Ô­Ê¼µÄ is_inside ß‰İ‹
-// (ÎÒÃÇ°ÑÔ­À´µÄ is_inside Âß¼­ÌáÈ¡³öÀ´)
+// [æ–°å¢] éœæ…‹è¼”åŠ©å‡½æ•¸: åŸå§‹çš„ is_inside é‚è¼¯
+// (æˆ‘ä»¬æŠŠåŸæ¥çš„ is_inside é€»è¾‘æå–å‡ºæ¥)
 bool Boundary::is_inside_polygon(const glm::vec2& point, const std::vector<glm::vec2>& polygon)
 {
     if (polygon.empty())
@@ -72,33 +72,33 @@ bool Boundary::is_inside_polygon(const glm::vec2& point, const std::vector<glm::
     return inside;
 }
 
-// [ĞŞ¸Ä] ĞŞ¸ÄááµÄ is_inside: 
-// ±ØĞëÔÚÍâ»·ÄÚ£¬ÇÒÔÚËùÓĞÄÚ¶´Íâ
+// [ä¿®æ”¹] ä¿®æ”¹å¾Œçš„ is_inside: 
+// å¿…é¡»åœ¨å¤–ç¯å†…ï¼Œä¸”åœ¨æ‰€æœ‰å†…æ´å¤–
 bool Boundary::is_inside(const glm::vec2& point) const
 {
-    // 1. ±ØíšÔÚÍâ­hƒÈ
+    // 1. å¿…é ˆåœ¨å¤–ç’°å…§
     if (!is_inside_polygon(point, m_outer_boundary)) {
         return false;
     }
 
-    // 2. ±ØíšÔÚËùÓĞƒÈ¶´µÄ *Íâ²¿*
+    // 2. å¿…é ˆåœ¨æ‰€æœ‰å…§æ´çš„ *å¤–éƒ¨*
     for (const auto& hole : m_holes) {
         if (is_inside_polygon(point, hole)) {
-            return false; // ücÔÚƒÈ¶´Ñe
+            return false; // é»åœ¨å…§æ´è£¡
         }
     }
 
-    // ÔÚÍâ­hƒÈ£¬ÇÒ²»ÔÚÈÎºÎƒÈ¶´ƒÈ
+    // åœ¨å¤–ç’°å…§ï¼Œä¸”ä¸åœ¨ä»»ä½•å…§æ´å…§
     return true;
 }
 
-// [ĞÂÔö] ÊµÏÖ¼ÆËã×î½üµãÂß¼­
+// [æ–°å¢] å®ç°è®¡ç®—æœ€è¿‘ç‚¹é€»è¾‘
 glm::vec2 Boundary::get_closest_point(const glm::vec2& p) const {
-    // 1. ÏÈ¼ÆËãµ½Íâ»·µÄ×î½üµã
+    // 1. å…ˆè®¡ç®—åˆ°å¤–ç¯çš„æœ€è¿‘ç‚¹
     glm::vec2 best_point = closest_point_on_polygon(p, m_outer_boundary);
     float min_dist_sq = glm::dot(p - best_point, p - best_point);
 
-    // 2. ±éÀúËùÓĞÄÚ¶´£¬¿´ÓĞÃ»ÓĞ¸ü½üµÄ
+    // 2. éå†æ‰€æœ‰å†…æ´ï¼Œçœ‹æœ‰æ²¡æœ‰æ›´è¿‘çš„
     for (const auto& hole : m_holes) {
         if (hole.empty()) continue;
         glm::vec2 hole_pt = closest_point_on_polygon(p, hole);
@@ -113,26 +113,26 @@ glm::vec2 Boundary::get_closest_point(const glm::vec2& p) const {
     return best_point;
 }
 
-// [ĞÂÔö] ºËĞÄËã·¨£ºÍ¬Ê±Ñ°ÕÒ×î½üµãºÍÇĞÏß
+// [æ–°å¢] æ ¸å¿ƒç®—æ³•ï¼šåŒæ—¶å¯»æ‰¾æœ€è¿‘ç‚¹å’Œåˆ‡çº¿
 void Boundary::get_closest_point_and_tangent(const glm::vec2& p, glm::vec2& out_closest, glm::vec2& out_tangent) const
 {
     float min_dist_sq = FLT_MAX;
 
-    // ¶¨ÒåÒ»¸ö Lambda º¯ÊıÀ´´¦Àíµ¥¸ö»·£¨Íâ»·»òÄÚ¶´£©
+    // å®šä¹‰ä¸€ä¸ª Lambda å‡½æ•°æ¥å¤„ç†å•ä¸ªç¯ï¼ˆå¤–ç¯æˆ–å†…æ´ï¼‰
     auto process_ring = [&](const std::vector<glm::vec2>& ring) {
         if (ring.empty()) return;
         int n = (int)ring.size();
         for (int i = 0; i < n; ++i) {
             glm::vec2 a = ring[i];
-            glm::vec2 b = ring[(i + 1) % n]; // Ñ­»·Á¬½Óµ½ÏÂÒ»¸öµã
+            glm::vec2 b = ring[(i + 1) % n]; // å¾ªç¯è¿æ¥åˆ°ä¸‹ä¸€ä¸ªç‚¹
 
             glm::vec2 ab = b - a;
             float len_sq = glm::dot(ab, ab);
-            if (len_sq < 1e-9f) continue; // ºöÂÔÍË»¯±ß
+            if (len_sq < 1e-9f) continue; // å¿½ç•¥é€€åŒ–è¾¹
 
-            // ¼ÆËãµã p ÔÚÏß¶Î ab ÉÏµÄÍ¶Ó°±ÈÀı t
+            // è®¡ç®—ç‚¹ p åœ¨çº¿æ®µ ab ä¸Šçš„æŠ•å½±æ¯”ä¾‹ t
             float t = glm::dot(p - a, ab) / len_sq;
-            t = std::max(0.0f, std::min(1.0f, t)); // ÏŞÖÆÔÚÏß¶Î·¶Î§ÄÚ
+            t = std::max(0.0f, std::min(1.0f, t)); // é™åˆ¶åœ¨çº¿æ®µèŒƒå›´å†…
 
             glm::vec2 pt = a + t * ab;
             float dist_sq = glm::dot(p - pt, p - pt);
@@ -140,16 +140,16 @@ void Boundary::get_closest_point_and_tangent(const glm::vec2& p, glm::vec2& out_
             if (dist_sq < min_dist_sq) {
                 min_dist_sq = dist_sq;
                 out_closest = pt;
-                // ÇĞÏß¾ÍÊÇ±ßµÄ·½Ïò (¹éÒ»»¯)
+                // åˆ‡çº¿å°±æ˜¯è¾¹çš„æ–¹å‘ (å½’ä¸€åŒ–)
                 out_tangent = glm::normalize(ab);
             }
         }
         };
 
-    // 1. ¼ì²éÍâ»·
+    // 1. æ£€æŸ¥å¤–ç¯
     process_ring(m_outer_boundary);
 
-    // 2. ¼ì²éËùÓĞÄÚ¶´
+    // 2. æ£€æŸ¥æ‰€æœ‰å†…æ´
     for (const auto& hole : m_holes) {
         process_ring(hole);
     }

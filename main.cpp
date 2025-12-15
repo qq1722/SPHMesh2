@@ -1,4 +1,4 @@
-#include "Viewer.h"
+﻿#include "Viewer.h"
 #include "Boundary.h"
 #include "Simulation2D.h"
 #include "models.h"
@@ -9,13 +9,13 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <string>
-#include <filesystem> // C++17 ��׼�⣬�����ļ�ϵͳ����
+#include <filesystem> // C++17 标准库，用于文件系统操作
 #include <map>
 #include <set>
 
 namespace fs = std::filesystem;
 
-// ���ڴ洢ɨ�赽��ģ����Ϣ
+// 用于存储扫描到的模型信息
 struct ChartInfo {
     bool has_holes = false;
 };
@@ -25,7 +25,7 @@ struct ModelData {
     std::map<int, ChartInfo> charts; // Key: Chart Index, Value: Info
 };
 
-// ɨ�� exportdata �ļ��в������ļ�
+// 扫描 exportdata 文件夹并解析文件
 std::map<std::string, ModelData> scan_export_data() {
     std::map<std::string, ModelData> models;
     std::string dir_path = "exportdata";
@@ -41,15 +41,15 @@ std::map<std::string, ModelData> scan_export_data() {
 
         std::string filename = entry.path().filename().string();
 
-        // �򵥵��ļ������������� "_chart_"
-        // �����ʽ: <ModelName>_chart_<Index>_<Type>.txt
+        // 简单的文件名解析：查找 "_chart_"
+        // 假设格式: <ModelName>_chart_<Index>_<Type>.txt
         size_t chart_pos = filename.find("_chart_");
         if (chart_pos == std::string::npos) continue;
 
         std::string model_name = filename.substr(0, chart_pos);
-        std::string rest = filename.substr(chart_pos + 7); // ���� "_chart_" (7 chars)
+        std::string rest = filename.substr(chart_pos + 7); // 跳过 "_chart_" (7 chars)
 
-        // ���� Index
+        // 解析 Index
         size_t underscore_pos = rest.find('_');
         if (underscore_pos == std::string::npos) continue;
 
@@ -57,28 +57,61 @@ std::map<std::string, ModelData> scan_export_data() {
             int chart_idx = std::stoi(rest.substr(0, underscore_pos));
             std::string suffix = rest.substr(underscore_pos + 1);
 
-            // ���ģ�ͺ� Chart ����
+            // 标记模型和 Chart 存在
             models[model_name].name = model_name;
 
-            // ȷ�� Chart ��Ŀ����
+            // 确保 Chart 条目存在
             if (models[model_name].charts.find(chart_idx) == models[model_name].charts.end()) {
                 models[model_name].charts[chart_idx] = ChartInfo{};
             }
 
-            // ����Ƿ�Ϊ�׶��ļ�
+            // 检查是否为孔洞文件
             if (suffix.find("hole") != std::string::npos) {
                 models[model_name].charts[chart_idx].has_holes = true;
             }
         }
         catch (...) {
-            continue; // ��������ʧ�ܣ�����
+            continue; // 解析数字失败，跳过
         }
     }
     return models;
 }
 
+// [新增] 辅助函数：扫描模型的所有Chart，找到全局最大尺寸
+float compute_global_scale(const std::string& model_name, const ModelData& model_data) {
+    float global_max_dim = 0.0f;
+
+    // 遍历该模型的所有 Chart
+    for (const auto& pair : model_data.charts) {
+        int chart_idx = pair.first;
+
+        // 临时加载原始数据（不缩放，或者用默认方式加载原始坐标）
+        // 我们可以直接利用 load_polygon_from_file_raw 读取边界
+        std::stringstream ss;
+        ss << "exportdata/" << model_name << "_chart_" << chart_idx << "_boundary.txt";
+        std::vector<glm::vec2> verts = load_polygon_from_file_raw(ss.str());
+
+        if (verts.empty()) continue;
+
+        // 计算该 Chart 的尺寸
+        glm::vec2 min_c = verts[0], max_c = verts[0];
+        for (const auto& v : verts) {
+            min_c.x = std::min(min_c.x, v.x); min_c.y = std::min(min_c.y, v.y);
+            max_c.x = std::max(max_c.x, v.x); max_c.y = std::max(max_c.y, v.y);
+        }
+        float w = max_c.x - min_c.x;
+        float h = max_c.y - min_c.y;
+        global_max_dim = std::max(global_max_dim, std::max(w, h));
+    }
+
+    if (global_max_dim < 1e-6f) return 1.0f;
+
+    // 目标：让整个模型中最大的部分适应 10.0 的视口
+    return 10.0f / global_max_dim;
+}
+
 int main() {
-    // --- 1. ɨ��ģ�� ---
+    // --- 1. 扫描模型 ---
     std::cout << "Scanning 'exportdata' folder..." << std::endl;
     auto models = scan_export_data();
 
@@ -89,7 +122,7 @@ int main() {
         return -1;
     }
 
-    // --- 2. �û�ѡ��ģ�� ---
+    // --- 2. 用户选择模型 ---
     std::vector<std::string> model_names;
     int idx = 1;
     std::cout << "\nAvailable Models:" << std::endl;
@@ -116,7 +149,11 @@ int main() {
     std::string selected_model_name = model_names[model_choice - 1];
     ModelData& selected_model = models[selected_model_name];
 
-    // --- 3. �û�ѡ�� Chart ---
+    // [新增] 在选择模型后，立即计算该模型的全局缩放比例
+    float global_scale = compute_global_scale(selected_model_name, selected_model);
+    std::cout << "\n[Global Info] Calculated Global Scale for '" << selected_model_name << "': " << global_scale << std::endl;
+
+    // --- 3. 用户选择 Chart ---
     std::vector<int> chart_indices;
     idx = 1;
     std::cout << "\nAvailable Charts for '" << selected_model_name << "':" << std::endl;
@@ -125,7 +162,7 @@ int main() {
         bool holes = pair.second.has_holes;
         std::cout << "  [" << idx << "] Chart " << c_idx;
         if (holes) {
-            std::cout << " (With Holes / �л�)";
+            std::cout << " (With Holes / 有环)";
         }
         std::cout << std::endl;
         chart_indices.push_back(c_idx);
@@ -148,8 +185,8 @@ int main() {
 
     int selected_chart_index = chart_indices[chart_choice - 1];
 
-    // --- [����] ���� 3.5: ѯ�ʼ��ܲ��� ---
-    float refinement_level = 5.0f; // Ĭ��ֵ
+    // --- [新增] 步骤 3.5: 询问加密层数 ---
+    float refinement_level = 5.0f; // 默认值
     std::cout << "\nSet boundary refinement level (e.g., 5.0 = 5 layers): ";
     std::cin >> refinement_level;
     if (std::cin.fail() || refinement_level <= 0) {
@@ -159,26 +196,31 @@ int main() {
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    // --- 4. �������� ---
+    // --- 4. 加载数据 (修改) ---
     std::cout << "\nLoading " << selected_model_name << " / Chart " << selected_chart_index << " ..." << std::endl;
 
-    Chart2D active_chart = load_chart_by_index(selected_model_name, selected_chart_index);
+    // [核心修改] 传入 global_scale，确保小图表保持小，大图表保持大
+    Chart2D active_chart = load_chart_by_index(selected_model_name, selected_chart_index, global_scale);
 
-    if (!active_chart.IsValid()) {
-        std::cerr << "Error: Failed to load boundary data." << std::endl;
-        return -1;
-    }
+    if (!active_chart.IsValid()) { /* Error handling */ return -1; }
 
-    // --- 5. ����������ģ�� ---
+    // --- 5. 创建并运行模拟 ---
     Boundary boundary(active_chart);
-    Simulation2D sim(boundary, refinement_level);
+    // [核心修改] 定义一个固定的基础间距
+    // 解释：以前我们用 (宽度 / 150)。现在因为最大的图表宽度大约是 10.0 (归一化后)，
+    // 所以我们用 10.0 / 150.0 作为基准，这样所有图表的密度都一致了。
+    float fixed_particle_spacing = 10.0f / 150.0f;
+
+    // 传入 fixed_particle_spacing
+    Simulation2D sim(boundary, refinement_level, fixed_particle_spacing);
+
     CGALMeshGenerator generator;
     Qmorph qmorph_converter;
 
     Viewer viewer(1280, 720, "SPH Remeshing - Dynamic Mesh Generation");
 
-    // [����] ���õ����ļ��Ļ�������
-    // ��ʽ: teddy_chart_0
+    // [新增] 设置导出文件的基础名称
+    // 格式: teddy_chart_0
     std::string base_name = selected_model_name + "_chart_" + std::to_string(selected_chart_index);
     viewer.set_output_base_name(base_name);
 
